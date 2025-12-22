@@ -11,8 +11,9 @@ const mapApiItem = (apiItem: any): DriveItem => ({
   size: apiItem.size,
   extension: (apiItem.filename || apiItem.name)?.split('.').pop(),
   modifiedAt: new Date(apiItem.updatedAt || apiItem.createdAt).getTime(),
-  url: apiItem.type !== 'FOLDER' ? `https://loaf.cnzoe.com/api/files/${apiItem.id}/content` : undefined,
-  mimeType: apiItem.mimeType
+  url: apiItem.type !== 'FOLDER' ? `https://loaf-store.cnzoe.com/${apiItem.r2Key}` : undefined,
+  mimeType: apiItem.mimeType,
+  r2Key: apiItem.r2Key
 });
 
 export const useFiles = (folderId: string | null, search?: string) => {

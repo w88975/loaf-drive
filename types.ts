@@ -12,6 +12,7 @@ export interface DriveItem {
   modifiedAt: number; // timestamp
   thumbnail?: string;
   url?: string;
+  r2Key?: string;
 }
 
 export interface FolderTreeItem {
@@ -47,4 +48,5 @@ export interface ApiFileItem {
   size: number;
   updatedAt: string;
   mimeType?: string;
+  r2Key?: string;
 }
