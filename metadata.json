@@ -1,0 +1,7 @@
+{
+  "name": "GeekDrive - Personal Cloud Storage",
+  "description": "A minimalist, geek-themed personal cloud drive with advanced file management, drag-and-drop uploads, and rich media previews.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

@@ -1,0 +1,56 @@
+
+import { useQuery, useMutation, useQueryClient } from 'https://esm.sh/@tanstack/react-query@5.66.0';
+import { driveApi } from '../api/drive';
+import { DriveItem } from '../types';
+
+const mapApiItem = (apiItem: any): DriveItem => ({
+  id: apiItem.id,
+  name: apiItem.filename || apiItem.name,
+  type: apiItem.type === 'FOLDER' ? 'folder' : 'file',
+  parentId: apiItem.folderId === 'root' ? null : apiItem.folderId,
+  size: apiItem.size,
+  extension: (apiItem.filename || apiItem.name)?.split('.').pop(),
+  modifiedAt: new Date(apiItem.updatedAt || apiItem.createdAt).getTime(),
+  url: apiItem.type !== 'FOLDER' ? `https://loaf.cnzoe.com/api/files/${apiItem.id}/content` : undefined,
+  mimeType: apiItem.mimeType
+});
+
+export const useFiles = (folderId: string | null, search?: string) => {
+  return useQuery({
+    queryKey: ['files', folderId, search],
+    queryFn: async () => {
+      const result = await driveApi.fetchFiles(folderId, search);
+      if (result.code !== 0) throw new Error(result.message);
+      return result.data.items.map(mapApiItem);
+    },
+  });
+};
+
+export const useDriveMutations = () => {
+  const queryClient = useQueryClient();
+
+  const createFolder = useMutation({
+    mutationFn: ({ name, parentId }: { name: string; parentId: string | null }) => 
+      driveApi.createFolder(name, parentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
+  });
+
+  const renameItem = useMutation({
+    mutationFn: ({ id, newName }: { id: string; newName: string }) => 
+      driveApi.renameItem(id, newName),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
+  });
+
+  const deleteItems = useMutation({
+    mutationFn: (ids: string[]) => Promise.all(ids.map(id => driveApi.deleteItem(id))),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
+  });
+
+  const moveItems = useMutation({
+    mutationFn: ({ ids, targetId }: { ids: string[]; targetId: string | null }) => 
+      driveApi.moveItems(ids, targetId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
+  });
+
+  return { createFolder, renameItem, deleteItems, moveItems };
+};
