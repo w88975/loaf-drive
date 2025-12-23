@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink } from 'https://esm.sh/react-router-dom@6';
+import { NavLink } from 'react-router-dom';
 import { Icons } from '../../constants';
 import { CONFIG } from '../../config';
 

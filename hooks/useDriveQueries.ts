@@ -1,5 +1,4 @@
-
-import { useQuery, useMutation, useQueryClient } from 'https://esm.sh/@tanstack/react-query@5.66.0';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { driveApi } from '../api/drive';
 import { DriveItem } from '../types';
 import { CONFIG } from '../config';

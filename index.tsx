@@ -1,8 +1,8 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from 'https://esm.sh/@tanstack/react-query@5.66.0';
-import { HashRouter } from 'https://esm.sh/react-router-dom@6';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HashRouter } from 'react-router-dom';
 import App from './App';
 
 const queryClient = new QueryClient({

@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Routes, Route, useLocation } from 'https://esm.sh/react-router-dom@6';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Icons } from './constants';
 import { DriveItem } from './types';
 import { useFiles } from './hooks/useDriveQueries';
