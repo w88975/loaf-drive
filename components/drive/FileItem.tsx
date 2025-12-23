@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import { DriveItem } from '../../types';
 import { Icons } from '../../constants';
 import { formatSize, getFileIcon, formatDate } from '../../utils';
+import { FilePreviewLoop } from './FilePreviewLoop';
 
 interface FileItemProps {
   item: DriveItem;
@@ -28,7 +29,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   onDelete
 }) => {
   const isFolder = item.type === 'folder';
-  const iconType = getFileIcon(item.type, item.extension);
+  const iconKey = getFileIcon(item.type, item.extension);
   const pressTimer = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
 
@@ -57,7 +58,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
-    e.stopPropagation(); // 阻止冒泡到容器
+    e.stopPropagation();
     onContextMenu(e);
   };
 
@@ -71,9 +72,13 @@ export const FileItem: React.FC<FileItemProps> = ({
     onContextMenu: handleContextMenu
   };
 
+  const IconComponent = Icons[iconKey] || Icons.File;
+
   if (viewMode === 'grid') {
-    const hasPreview = (iconType === 'image' && item.url) || (iconType === 'video' && item.previews && item.previews.length > 0);
-    const previewSrc = iconType === 'image' ? item.url : (item.previews ? item.previews[0] : null);
+    const hasPreviews = item.previews && item.previews.length > 0;
+    const isImage = iconKey === 'Image';
+    const isVideo = iconKey === 'Video';
+    const showPreview = hasPreviews || (isImage && item.url);
 
     return (
       <div 
@@ -83,17 +88,22 @@ export const FileItem: React.FC<FileItemProps> = ({
         <div className="flex-1 flex items-center justify-center w-full relative">
           {isFolder ? (
             <div className="relative">
-              <Icons.Folder className="w-10 h-10" />
+              <IconComponent className="w-10 h-10" />
               {item.isLocked && (
                 <div className="absolute -bottom-1 -right-1 bg-yellow-400 p-0.5 border border-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                   <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
                 </div>
               )}
             </div>
-          ) : hasPreview && previewSrc ? (
+          ) : showPreview ? (
             <div className="absolute inset-0 p-1">
-              <img src={previewSrc} alt="" className="w-full h-full object-cover border border-black/5 pointer-events-none" />
-              {iconType === 'video' && (
+              {hasPreviews ? (
+                <FilePreviewLoop previews={item.previews!} className="border border-black/5" />
+              ) : (
+                <img src={item.url} alt="" className="w-full h-full object-cover border border-black/5 pointer-events-none" />
+              )}
+              
+              {isVideo && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-black/40 backdrop-blur-sm rounded-full p-1 border border-white/30">
                     <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
@@ -103,10 +113,8 @@ export const FileItem: React.FC<FileItemProps> = ({
                 </div>
               )}
             </div>
-          ) : iconType === 'video' ? (
-            <Icons.Video className="w-10 h-10" />
           ) : (
-            <Icons.File className="w-10 h-10" />
+            <IconComponent className="w-10 h-10" />
           )}
           
           {isSelected && (
@@ -140,7 +148,7 @@ export const FileItem: React.FC<FileItemProps> = ({
       </td>
       <td className="p-3 flex items-center space-x-3 border-r-2 border-black font-bold uppercase truncate align-middle">
         <div className="flex-shrink-0 flex items-center">
-          {isFolder ? <Icons.Folder className="w-4 h-4" /> : iconType === 'video' ? <Icons.Video className="w-4 h-4" /> : iconType === 'image' ? <Icons.Image className="w-4 h-4" /> : <Icons.File className="w-4 h-4" />}
+          <IconComponent className="w-4 h-4" />
           {isFolder && item.isLocked && <span className="ml-1 opacity-50">🔒</span>}
         </div>
         <span className="truncate">{item.name}</span>

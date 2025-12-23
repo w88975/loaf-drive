@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { UploadTask } from '../types';
 import { driveApi } from '../api/drive';
-import { generateId, getVideoFramesWeb, dataURItoBlob } from '../utils';
+import { generateId, getVideoFramesWeb, getImageThumbnailWeb, dataURItoBlob } from '../utils';
 
 export const useUpload = () => {
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
@@ -26,29 +26,43 @@ export const useUpload = () => {
 
     for (const task of newTasks) {
       const isVideo = task.file.type.startsWith('video/');
+      const isImage = task.file.type.startsWith('image/') && task.file.type !== 'image/svg+xml';
       let previewR2Keys: string[] = [];
 
       try {
-        if (isVideo) {
-          // 状态变为 processing，表示正在提取预览图
+        if (isVideo || isImage) {
           setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'processing' } : t));
           
-          const videoUrl = URL.createObjectURL(task.file);
-          try {
-            const frames = await getVideoFramesWeb(videoUrl, [0.1, 0.5, 0.9]);
-            for (const frame of frames) {
-              const blob = dataURItoBlob(frame.uri);
+          if (isVideo) {
+            const videoUrl = URL.createObjectURL(task.file);
+            try {
+              const frames = await getVideoFramesWeb(videoUrl, [0.1, 0.5, 0.9]);
+              for (const frame of frames) {
+                const blob = dataURItoBlob(frame.uri);
+                const result = await driveApi.uploadPreview(blob);
+                if (result.code === 0) {
+                  previewR2Keys.push(result.data.r2Key);
+                }
+              }
+            } finally {
+              URL.revokeObjectURL(videoUrl);
+            }
+          } else if (isImage) {
+            const imageUrl = URL.createObjectURL(task.file);
+            try {
+              const thumbDataUri = await getImageThumbnailWeb(imageUrl, 100, 100);
+              const blob = dataURItoBlob(thumbDataUri);
               const result = await driveApi.uploadPreview(blob);
               if (result.code === 0) {
                 previewR2Keys.push(result.data.r2Key);
               }
+            } finally {
+              URL.revokeObjectURL(imageUrl);
             }
-          } finally {
-            URL.revokeObjectURL(videoUrl);
           }
         }
 
-        // 开始正式上传主文件
+        // Start official main file upload
         setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'uploading' } : t));
 
         const fd = new FormData();
@@ -73,7 +87,6 @@ export const useUpload = () => {
             const result = JSON.parse(xhr.responseText);
             if (result.code === 0) {
               setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'completed', progress: 100 } : t));
-              // 全局使文件查询失效，这会触发所有 FilesView 实例自动重新获取数据
               queryClient.invalidateQueries({ queryKey: ['files'] });
             } else {
               setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'error' } : t));

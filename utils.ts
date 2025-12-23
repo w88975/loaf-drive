@@ -17,24 +17,29 @@ export const formatDate = (timestamp: number): string => {
   }).format(new Date(timestamp));
 };
 
-export type FileCategory = 'image' | 'video' | 'audio' | 'text' | 'other';
+export type FileCategory = 'image' | 'video' | 'audio' | 'text' | 'pdf' | 'archive' | 'other';
 
 export const getFileCategory = (extension?: string): FileCategory => {
   const ext = extension?.toLowerCase() || '';
   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) return 'image';
   if (['mp4', 'webm', 'ogg', 'mov', 'm4v'].includes(ext)) return 'video';
   if (['mp3', 'wav', 'flac', 'aac', 'm4a', 'wma', 'ogg'].includes(ext)) return 'audio';
+  if (['pdf'].includes(ext)) return 'pdf';
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
   if (['txt', 'md', 'json', 'js', 'ts', 'tsx', 'jsx', 'css', 'html', 'py', 'java', 'c', 'cpp', 'rs', 'go', 'sh', 'yaml', 'xml', 'sql', 'toml', 'ini', 'env', 'gitignore'].includes(ext)) return 'text';
   return 'other';
 };
 
-export const getFileIcon = (type: string, extension?: string) => {
-  if (type === 'folder') return 'folder';
+export const getFileIcon = (type: string, extension?: string): keyof typeof import('./constants').Icons => {
+  if (type === 'folder') return 'Folder';
   const category = getFileCategory(extension);
-  if (category === 'image') return 'image';
-  if (category === 'video') return 'video';
-  if (category === 'audio') return 'file'; // Ideally we'd have an audio icon but reuse file for now
-  return 'file';
+  if (category === 'image') return 'Image';
+  if (category === 'video') return 'Video';
+  if (category === 'audio') return 'Audio';
+  if (category === 'text') return 'Code';
+  if (category === 'pdf') return 'Pdf';
+  if (category === 'archive') return 'Archive';
+  return 'File';
 };
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -43,6 +48,34 @@ export interface VideoFrame {
   uri: string;
   time: number;
   ratio: number;
+}
+
+export async function getImageThumbnailWeb(
+  imageUrl: string,
+  width: number = 100,
+  height: number = 100
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas context failed'));
+
+      // Cover scaling
+      const scale = Math.max(width / img.width, height / img.height);
+      const x = (width / 2) - (img.width / 2) * scale;
+      const y = (height / 2) - (img.height / 2) * scale;
+      
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = reject;
+    img.src = imageUrl;
+  });
 }
 
 export async function getVideoFramesWeb(
