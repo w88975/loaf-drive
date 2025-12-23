@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { Icons } from './constants';
 import { DriveItem, SortKey, SortOrder } from './types';
-import { useFiles, useDriveMutations } from './hooks/useDriveQueries';
+import { useFiles, useRecycleBin, useDriveMutations, useRecycleMutations } from './hooks/useDriveQueries';
 import { useUpload } from './hooks/useUpload';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -16,6 +16,7 @@ import { PreviewModal } from './components/overlays/PreviewModal';
 import { NewFolderModal, RenameModal, DeleteModal, MoveModal } from './components/overlays/Modals';
 
 const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'files' | 'trash'>('files');
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [path, setPath] = useState<DriveItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,22 +30,28 @@ const App: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Overlay states
-  const [activeModal, setActiveModal] = useState<'new-folder' | 'rename' | 'delete' | 'move' | null>(null);
+  const [activeModal, setActiveModal] = useState<'new-folder' | 'rename' | 'delete' | 'move' | 'clear-trash' | 'delete-permanent' | null>(null);
   const [previewItem, setPreviewItem] = useState<DriveItem | null>(null);
   const [targetItem, setTargetItem] = useState<DriveItem | null>(null);
 
   // TanStack Queries
-  const { data: items = [], isLoading, refetch } = useFiles(currentFolderId, searchQuery);
+  const { data: driveFiles = [], isLoading: isDriveLoading, refetch: refetchFiles } = useFiles(currentFolderId, searchQuery);
+  const { data: trashFiles = [], isLoading: isTrashLoading } = useRecycleBin(searchQuery);
   const { createFolder, renameItem, deleteItems, moveItems } = useDriveMutations();
+  const { permanentlyDelete, clearBin } = useRecycleMutations();
+
+  const items = activeTab === 'files' ? driveFiles : trashFiles;
+  const isLoading = activeTab === 'files' ? isDriveLoading : isTrashLoading;
   
   // Custom Hooks (Upload remains XHR-based for progress tracking)
-  const { uploadTasks, showUploadPanel, setShowUploadPanel, handleUpload, cancelUpload, clearHistory } = useUpload(refetch);
+  const { uploadTasks, showUploadPanel, setShowUploadPanel, handleUpload, cancelUpload, clearHistory } = useUpload(refetchFiles);
 
   // Drag & Drop
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
 
   const handleNavigate = useCallback((id: string | null, folderItem?: DriveItem) => {
+    setActiveTab('files');
     setCurrentFolderId(id);
     setSelectedIds(new Set());
     if (id === null) {
@@ -76,7 +83,7 @@ const App: React.FC = () => {
 
   const handleItemClick = (item: DriveItem) => {
     if (selectedIds.size > 0) toggleSelect(item.id);
-    else if (item.type === 'folder') handleNavigate(item.id, item);
+    else if (activeTab === 'files' && item.type === 'folder') handleNavigate(item.id, item);
     else setPreviewItem(item);
   };
 
@@ -112,10 +119,10 @@ const App: React.FC = () => {
   return (
     <div 
       className="flex h-screen bg-white text-black font-mono overflow-hidden relative select-none"
-      onDragEnter={(e) => { e.preventDefault(); dragCounter.current++; if (e.dataTransfer.items.length) setIsDragging(true); }}
-      onDragLeave={(e) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current === 0) setIsDragging(false); }}
+      onDragEnter={(e) => { e.preventDefault(); if (activeTab === 'files') dragCounter.current++; if (e.dataTransfer.items.length && activeTab === 'files') setIsDragging(true); }}
+      onDragLeave={(e) => { e.preventDefault(); if (activeTab === 'files') dragCounter.current--; if (dragCounter.current === 0) setIsDragging(false); }}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); setIsDragging(false); dragCounter.current = 0; handleUpload(e.dataTransfer.files, currentFolderId); }}
+      onDrop={(e) => { e.preventDefault(); setIsDragging(false); dragCounter.current = 0; if (activeTab === 'files') handleUpload(e.dataTransfer.files, currentFolderId); }}
       onClick={() => { if (selectedIds.size > 0) setSelectedIds(new Set()); }}
     >
       {isDragging && (
@@ -131,15 +138,17 @@ const App: React.FC = () => {
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         activeFolderId={currentFolderId} 
+        activeTab={activeTab}
         onSelectRoot={() => handleNavigate(null)} 
+        onSelectTrash={() => { setActiveTab('trash'); setSelectedIds(new Set()); }}
       />
 
       <main className="flex-1 flex flex-col min-w-0 bg-white">
         <Header 
           onOpenSidebar={() => setIsSidebarOpen(true)}
-          currentFolderId={currentFolderId}
-          navigationHistory={path}
-          onNavigate={(id) => handleNavigate(id)}
+          currentFolderId={activeTab === 'trash' ? 'trash' : currentFolderId}
+          navigationHistory={activeTab === 'trash' ? [] : path}
+          onNavigate={(id) => id === 'trash' ? setActiveTab('trash') : handleNavigate(id)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
@@ -150,18 +159,32 @@ const App: React.FC = () => {
         />
 
         <div className="p-4 md:p-6 pb-2 flex flex-wrap gap-2">
-          <button onClick={() => document.getElementById('file-upload')?.click()} className="flex items-center space-x-2 bg-black text-white px-3 md:px-4 py-2 hover:bg-yellow-400 hover:text-black border-2 border-black text-[10px] md:text-xs font-bold uppercase transition-colors">
-            <Icons.Plus className="w-3 h-3" /><span>Upload</span>
-          </button>
-          <input id="file-upload" type="file" multiple className="hidden" onChange={(e) => handleUpload(e.target.files, currentFolderId)} />
-          <NewFolderAction onClick={() => setActiveModal('new-folder')} />
+          {activeTab === 'files' ? (
+            <>
+              <button onClick={() => document.getElementById('file-upload')?.click()} className="flex items-center space-x-2 bg-black text-white px-3 md:px-4 py-2 hover:bg-yellow-400 hover:text-black border-2 border-black text-[10px] md:text-xs font-bold uppercase transition-colors">
+                <Icons.Plus className="w-3 h-3" /><span>Upload</span>
+              </button>
+              <input id="file-upload" type="file" multiple className="hidden" onChange={(e) => handleUpload(e.target.files, currentFolderId)} />
+              <NewFolderAction onClick={() => setActiveModal('new-folder')} />
+            </>
+          ) : (
+            <button 
+              onClick={() => setActiveModal('clear-trash')} 
+              className="flex items-center space-x-2 bg-red-600 text-white px-3 md:px-4 py-2 hover:bg-black transition-colors border-2 border-black text-[10px] md:text-xs font-bold uppercase"
+              disabled={items.length === 0}
+            >
+              <Icons.Trash className="w-3 h-3" /><span>Empty Trash</span>
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {isLoading ? (
             <div className="h-full flex items-center justify-center"><Icons.Grid className="w-10 h-10 animate-spin" /></div>
           ) : sortedItems.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center opacity-30 uppercase font-bold italic">Empty Directory</div>
+            <div className="h-full flex flex-col items-center justify-center opacity-30 uppercase font-bold italic">
+              {activeTab === 'trash' ? 'Trash is Empty' : 'Empty Directory'}
+            </div>
           ) : viewMode === 'grid' ? (
             <GridView 
               items={sortedItems}
@@ -171,7 +194,7 @@ const App: React.FC = () => {
               onContextMenu={handleContextMenu}
               onRename={(item) => { setTargetItem(item); setActiveModal('rename'); }}
               onMove={(item) => { setSelectedIds(new Set([item.id])); setActiveModal('move'); }}
-              onDelete={(item) => { setSelectedIds(new Set([item.id])); setActiveModal('delete'); }}
+              onDelete={(item) => { setTargetItem(item); setActiveModal(activeTab === 'trash' ? 'delete-permanent' : 'delete'); }}
             />
           ) : (
             <ListView 
@@ -186,7 +209,7 @@ const App: React.FC = () => {
               sortOrder={sortOrder}
               onRename={(item) => { setTargetItem(item); setActiveModal('rename'); }}
               onMove={(item) => { setSelectedIds(new Set([item.id])); setActiveModal('move'); }}
-              onDelete={(item) => { setSelectedIds(new Set([item.id])); setActiveModal('delete'); }}
+              onDelete={(item) => { setTargetItem(item); setActiveModal(activeTab === 'trash' ? 'delete-permanent' : 'delete'); }}
             />
           )}
         </div>
@@ -195,13 +218,55 @@ const App: React.FC = () => {
       {/* Modals & Overlays */}
       {activeModal === 'new-folder' && <NewFolderModal onClose={() => setActiveModal(null)} onConfirm={async (name) => { createFolder.mutate({ name, parentId: currentFolderId }); setActiveModal(null); }} />}
       {activeModal === 'rename' && targetItem && <RenameModal item={targetItem} onClose={() => setActiveModal(null)} onConfirm={async (name) => { renameItem.mutate({ id: targetItem.id, newName: name }); setActiveModal(null); }} />}
-      {activeModal === 'delete' && <DeleteModal count={selectedIds.size} onClose={() => setActiveModal(null)} onConfirm={async () => { deleteItems.mutate([...selectedIds]); setSelectedIds(new Set()); setActiveModal(null); }} />}
+      
+      {activeModal === 'delete' && (
+        <DeleteModal 
+          count={selectedIds.size || (targetItem ? 1 : 0)} 
+          onClose={() => { setActiveModal(null); setTargetItem(null); }} 
+          onConfirm={async () => { 
+            const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
+            deleteItems.mutate(ids); 
+            setSelectedIds(new Set()); 
+            setActiveModal(null); 
+            setTargetItem(null);
+          }} 
+        />
+      )}
+
+      {activeModal === 'delete-permanent' && (
+        <DeleteModal 
+          title="Delete Permanently?"
+          count={selectedIds.size || (targetItem ? 1 : 0)} 
+          onClose={() => { setActiveModal(null); setTargetItem(null); }} 
+          onConfirm={async () => { 
+            const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
+            await Promise.all(ids.map(id => permanentlyDelete.mutateAsync(id)));
+            setSelectedIds(new Set()); 
+            setActiveModal(null); 
+            setTargetItem(null);
+          }} 
+        />
+      )}
+
+      {activeModal === 'clear-trash' && (
+        <DeleteModal 
+          title="Clear Recycle Bin?"
+          count={items.length}
+          onClose={() => setActiveModal(null)} 
+          onConfirm={async () => { 
+            clearBin.mutate(); 
+            setSelectedIds(new Set()); 
+            setActiveModal(null); 
+          }} 
+        />
+      )}
+
       {activeModal === 'move' && <MoveModal count={selectedIds.size} onClose={() => setActiveModal(null)} onConfirm={async (destId) => { moveItems.mutate({ ids: [...selectedIds], targetId: destId }); setSelectedIds(new Set()); setActiveModal(null); }} />}
       
       {previewItem && <PreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />}
       
       {showUploadPanel && <UploadPanel tasks={uploadTasks} onClose={() => setShowUploadPanel(false)} onCancel={cancelUpload} onClear={clearHistory} />}
-      {selectedIds.size > 0 && <SelectionBar count={selectedIds.size} onMove={() => setActiveModal('move')} onDelete={() => setActiveModal('delete')} onClear={() => setSelectedIds(new Set())} />}
+      {selectedIds.size > 0 && <SelectionBar count={selectedIds.size} onMove={() => setActiveModal('move')} onDelete={() => setActiveModal(activeTab === 'trash' ? 'delete-permanent' : 'delete')} onClear={() => setSelectedIds(new Set())} />}
 
       {contextMenu && (
         <ContextMenu 
@@ -210,7 +275,7 @@ const App: React.FC = () => {
           item={contextMenu.item}
           onRename={() => { setTargetItem(contextMenu.item); setActiveModal('rename'); }}
           onMove={() => { setActiveModal('move'); }}
-          onDelete={() => { setActiveModal('delete'); }}
+          onDelete={() => { setTargetItem(contextMenu.item); setActiveModal(activeTab === 'trash' ? 'delete-permanent' : 'delete'); }}
         />
       )}
     </div>

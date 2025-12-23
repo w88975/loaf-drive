@@ -80,8 +80,8 @@ export const RenameModal: React.FC<{ item: DriveItem, onClose: () => void, onCon
   );
 };
 
-export const DeleteModal: React.FC<{ count: number, onClose: () => void, onConfirm: () => void }> = ({ count, onClose, onConfirm }) => (
-  <ModalShell title="Delete Items?" onClose={onClose} isError footer={
+export const DeleteModal: React.FC<{ title?: string, count: number, onClose: () => void, onConfirm: () => void }> = ({ title = "Delete Items?", count, onClose, onConfirm }) => (
+  <ModalShell title={title} onClose={onClose} isError footer={
     <>
       <button onClick={onClose} className="flex-1 border-2 border-black p-2 font-bold uppercase hover:bg-gray-100">Cancel</button>
       <button onClick={onConfirm} className="flex-1 bg-red-600 text-white p-2 font-bold uppercase hover:bg-red-700 transition-colors border-2 border-black">Delete</button>

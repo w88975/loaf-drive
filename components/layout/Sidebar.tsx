@@ -6,10 +6,14 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   activeFolderId: string | null;
+  activeTab: 'files' | 'trash';
   onSelectRoot: () => void;
+  onSelectTrash: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeFolderId, onSelectRoot }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ 
+  isOpen, onClose, activeFolderId, activeTab, onSelectRoot, onSelectTrash 
+}) => {
   const SidebarItem: React.FC<{ icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }> = ({ icon, label, active, onClick }) => (
     <button 
       onClick={() => { onClick?.(); onClose(); }}
@@ -29,9 +33,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, activeFolderI
           <p className="text-[10px] uppercase text-gray-500 mt-1">Status: Online</p>
         </div>
         <nav className="mt-4">
-          <SidebarItem icon={<Icons.Grid />} label="All Files" active={activeFolderId === null} onClick={onSelectRoot} />
-          <SidebarItem icon={<Icons.Plus className="w-5 h-5" />} label="Recent" />
-          <SidebarItem icon={<Icons.Trash />} label="Trash" />
+          <SidebarItem 
+            icon={<Icons.Grid />} 
+            label="All Files" 
+            active={activeTab === 'files'} 
+            onClick={onSelectRoot} 
+          />
+          <SidebarItem 
+            icon={<Icons.Trash />} 
+            label="Trash" 
+            active={activeTab === 'trash'}
+            onClick={onSelectTrash} 
+          />
         </nav>
         <div className="absolute bottom-0 w-full p-6 border-t-2 border-black bg-white">
           <div className="flex justify-between items-end mb-2">

@@ -27,6 +27,17 @@ export const useFiles = (folderId: string | null, search?: string) => {
   });
 };
 
+export const useRecycleBin = (search?: string) => {
+  return useQuery({
+    queryKey: ['recycle-bin', search],
+    queryFn: async () => {
+      const result = await driveApi.fetchRecycleBin(search);
+      if (result.code !== 0) throw new Error(result.message);
+      return result.data.items.map(mapApiItem);
+    },
+  });
+};
+
 export const useDriveMutations = () => {
   const queryClient = useQueryClient();
 
@@ -54,4 +65,20 @@ export const useDriveMutations = () => {
   });
 
   return { createFolder, renameItem, deleteItems, moveItems };
+};
+
+export const useRecycleMutations = () => {
+  const queryClient = useQueryClient();
+
+  const permanentlyDelete = useMutation({
+    mutationFn: (id: string) => driveApi.permanentlyDeleteItem(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recycle-bin'] }),
+  });
+
+  const clearBin = useMutation({
+    mutationFn: () => driveApi.clearRecycleBin(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recycle-bin'] }),
+  });
+
+  return { permanentlyDelete, clearBin };
 };

@@ -12,6 +12,13 @@ export const driveApi = {
     return (await res.json()) as ApiResponse<{ items: ApiFileItem[] }>;
   },
 
+  fetchRecycleBin: async (search?: string) => {
+    let url = `${API_HOST}/api/recycle-bin?limit=200`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    const res = await fetch(url);
+    return (await res.json()) as ApiResponse<{ items: ApiFileItem[] }>;
+  },
+
   fetchTree: async () => {
     const res = await fetch(`${API_HOST}/api/folders/tree`);
     return (await res.json()) as ApiResponse<FolderTreeItem[]>;
@@ -28,6 +35,16 @@ export const driveApi = {
 
   deleteItem: async (id: string) => {
     const res = await fetch(`${API_HOST}/api/files/${id}`, { method: 'DELETE' });
+    return await res.json();
+  },
+
+  permanentlyDeleteItem: async (id: string) => {
+    const res = await fetch(`${API_HOST}/api/recycle-bin?id=${id}`, { method: 'DELETE' });
+    return await res.json();
+  },
+
+  clearRecycleBin: async () => {
+    const res = await fetch(`${API_HOST}/api/recycle-bin`, { method: 'DELETE' });
     return await res.json();
   },
 
