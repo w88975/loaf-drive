@@ -1,27 +1,24 @@
 
 import React from 'react';
+import { NavLink } from 'https://esm.sh/react-router-dom@6';
 import { Icons } from '../../constants';
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  activeFolderId: string | null;
-  activeTab: 'files' | 'trash';
   onSelectRoot: () => void;
-  onSelectTrash: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  isOpen, onClose, activeFolderId, activeTab, onSelectRoot, onSelectTrash 
-}) => {
-  const SidebarItem: React.FC<{ icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }> = ({ icon, label, active, onClick }) => (
-    <button 
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectRoot }) => {
+  const SidebarItem: React.FC<{ icon: React.ReactNode, label: string, to: string, onClick?: () => void }> = ({ icon, label, to, onClick }) => (
+    <NavLink 
+      to={to}
       onClick={() => { onClick?.(); onClose(); }}
-      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-none transition-all duration-200 border-l-4 ${active ? 'bg-yellow-400 border-black text-black font-bold' : 'bg-transparent border-transparent hover:bg-gray-100 text-gray-600'}`}
+      className={({ isActive }) => `w-full flex items-center space-x-3 px-4 py-3 rounded-none transition-all duration-200 border-l-4 ${isActive ? 'bg-yellow-400 border-black text-black font-bold' : 'bg-transparent border-transparent hover:bg-gray-100 text-gray-600'}`}
     >
       <span className="w-5 h-5">{icon}</span>
       <span className="font-mono text-sm uppercase tracking-tight">{label}</span>
-    </button>
+    </NavLink>
   );
 
   return (
@@ -36,14 +33,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <SidebarItem 
             icon={<Icons.Grid />} 
             label="All Files" 
-            active={activeTab === 'files'} 
+            to="/" 
             onClick={onSelectRoot} 
           />
           <SidebarItem 
             icon={<Icons.Trash />} 
             label="Trash" 
-            active={activeTab === 'trash'}
-            onClick={onSelectTrash} 
+            to="/trash"
           />
         </nav>
         <div className="absolute bottom-0 w-full p-6 border-t-2 border-black bg-white">

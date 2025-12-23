@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from 'https://esm.sh/@tanstack/react-query@5.66.0';
+import { HashRouter } from 'https://esm.sh/react-router-dom@6';
 import App from './App';
 
 const queryClient = new QueryClient({
@@ -22,7 +23,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <HashRouter>
+        <App />
+      </HashRouter>
     </QueryClientProvider>
   </React.StrictMode>
 );

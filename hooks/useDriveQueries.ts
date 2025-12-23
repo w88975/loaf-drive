@@ -55,7 +55,11 @@ export const useDriveMutations = () => {
 
   const deleteItems = useMutation({
     mutationFn: (ids: string[]) => Promise.all(ids.map(id => driveApi.deleteItem(id))),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
+    onSuccess: () => {
+      // 同时失效两个查询，因为删除操作会将文件移入回收站
+      queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['recycle-bin'] });
+    },
   });
 
   const moveItems = useMutation({
