@@ -72,16 +72,36 @@ export const FileItem: React.FC<FileItemProps> = ({
   const iconKey = getFileIcon(item.type, item.extension);
   const pressTimer = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
+  const isMobile = useRef(false);
 
   /**
    * 开始长按检测
    * 设置 600ms 定时器，超时后触发长按回调
+   * 移动端：长按触发右键菜单
+   * 桌面端：长按触发多选
    */
   const startPress = (e: React.MouseEvent | React.TouchEvent) => {
     isLongPressActive.current = false;
+    isMobile.current = 'touches' in e;
+    
     pressTimer.current = window.setTimeout(() => {
       isLongPressActive.current = true;
-      onLongPress();
+      
+      if (isMobile.current) {
+        const touch = (e as React.TouchEvent).touches[0];
+        if (touch) {
+          const syntheticEvent = new MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            clientX: touch.clientX,
+            clientY: touch.clientY
+          });
+          (e.target as HTMLElement).dispatchEvent(syntheticEvent);
+        }
+      } else {
+        onLongPress();
+      }
+      
       pressTimer.current = null;
     }, 600);
   };
@@ -111,8 +131,10 @@ export const FileItem: React.FC<FileItemProps> = ({
 
   /**
    * 处理右键菜单事件
+   * 移动端通过长按触发，桌面端通过右键触发
    */
   const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     onContextMenu(e);
   };
