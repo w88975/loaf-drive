@@ -69,5 +69,15 @@ export const driveApi = {
     ));
   },
 
+  uploadPreview: async (file: Blob) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${API_HOST}/api/files/upload-preview`, {
+      method: 'POST',
+      body: fd
+    });
+    return (await res.json()) as ApiResponse<{ r2Key: string }>;
+  },
+
   getUploadUrl: () => `${API_HOST}/api/files/upload`
 };

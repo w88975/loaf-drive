@@ -26,7 +26,7 @@ export interface UploadTask {
   id: string;
   file: File;
   progress: number;
-  status: 'pending' | 'uploading' | 'completed' | 'error' | 'cancelled';
+  status: 'pending' | 'processing' | 'uploading' | 'completed' | 'error' | 'cancelled';
   targetFolderId: string | null;
   xhr?: XMLHttpRequest;
 }
