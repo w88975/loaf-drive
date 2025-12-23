@@ -1,3 +1,4 @@
+
 import { ApiResponse, ApiFileItem, FolderTreeItem } from '../types';
 import { CONFIG } from '../config';
 
@@ -98,5 +99,32 @@ export const driveApi = {
     return (await res.json()) as ApiResponse<{ r2Key: string }>;
   },
 
-  getUploadUrl: () => `${API_HOST}/api/files/upload`
+  getUploadUrl: () => `${API_HOST}/api/files/upload`,
+
+  // Chunked Upload API
+  uploadInit: async (data: { filename: string, folderId: string, totalSize: number, mimeType: string }) => {
+    const res = await fetch(`${API_HOST}/api/files/upload/init`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return (await res.json()) as ApiResponse<{ id: string, uploadId: string, r2Key: string, filename: string }>;
+  },
+
+  uploadPart: async (fd: FormData) => {
+    const res = await fetch(`${API_HOST}/api/files/upload/part`, {
+      method: 'POST',
+      body: fd
+    });
+    return (await res.json()) as ApiResponse<{ partNumber: number, etag: string }>;
+  },
+
+  uploadComplete: async (data: { id: string, uploadId: string, r2Key: string, parts: { partNumber: number, etag: string }[], previews?: string[] }) => {
+    const res = await fetch(`${API_HOST}/api/files/upload/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return (await res.json()) as ApiResponse<ApiFileItem>;
+  }
 };
