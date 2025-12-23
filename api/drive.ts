@@ -1,15 +1,20 @@
-
 import { ApiResponse, ApiFileItem, FolderTreeItem } from '../types';
 import { CONFIG } from '../config';
 
 const { API_HOST } = CONFIG;
 
 export const driveApi = {
-  fetchFiles: async (folderId: string | null, search?: string) => {
+  fetchFiles: async (folderId: string | null, search?: string, password?: string) => {
     const fid = folderId || 'root';
     let url = `${API_HOST}/api/files?folderId=${fid}&limit=200`;
     if (search) url = `${API_HOST}/api/files?search=${encodeURIComponent(search)}&limit=200`;
-    const res = await fetch(url);
+    
+    const headers: Record<string, string> = {};
+    if (password) {
+      headers['x-folder-password'] = password;
+    }
+
+    const res = await fetch(url, { headers });
     return (await res.json()) as ApiResponse<{ items: ApiFileItem[] }>;
   },
 
@@ -54,6 +59,20 @@ export const driveApi = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: newName })
+    });
+    return await res.json();
+  },
+
+  updateLockStatus: async (id: string, isLocked: boolean, password?: string) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (password) {
+      headers['x-folder-password'] = password;
+    }
+
+    const res = await fetch(`${API_HOST}/api/files/${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ isLocked })
     });
     return await res.json();
   },

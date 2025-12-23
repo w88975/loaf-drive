@@ -80,6 +80,21 @@ export const RenameModal: React.FC<{ item: DriveItem, onClose: () => void, onCon
   );
 };
 
+export const PasswordModal: React.FC<{ folderName: string, onClose: () => void, onConfirm: (password: string) => void }> = ({ folderName, onClose, onConfirm }) => {
+  const [password, setPassword] = useState('');
+  return (
+    <ModalShell title="Encrypted Folder" onClose={onClose} footer={
+      <>
+        <button onClick={onClose} className="flex-1 border-2 border-black p-2 font-bold uppercase hover:bg-gray-100">Cancel</button>
+        <button onClick={() => onConfirm(password)} className="flex-1 bg-black text-white p-2 font-bold uppercase hover:bg-yellow-400 hover:text-black border-2 border-black">Enter</button>
+      </>
+    }>
+      <p className="text-[10px] font-bold uppercase mb-2">Accessing: <span className="italic">{folderName}</span></p>
+      <input autoFocus type="password" placeholder="PASSWORD..." className="w-full border-2 border-black p-3 outline-none focus:bg-yellow-100 text-sm font-bold uppercase tracking-widest" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && onConfirm(password)} />
+    </ModalShell>
+  );
+};
+
 export const DeleteModal: React.FC<{ title?: string, count: number, onClose: () => void, onConfirm: () => void }> = ({ title = "Delete Items?", count, onClose, onConfirm }) => (
   <ModalShell title={title} onClose={onClose} isError footer={
     <>

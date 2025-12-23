@@ -14,6 +14,7 @@ export interface DriveItem {
   url?: string;
   r2Key?: string;
   previews?: string[];
+  isLocked?: boolean;
 }
 
 export interface FolderTreeItem {
@@ -51,4 +52,5 @@ export interface ApiFileItem {
   mimeType?: string;
   r2Key?: string;
   previews?: string[];
+  isLocked?: boolean;
 }

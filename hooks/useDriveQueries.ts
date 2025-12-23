@@ -14,17 +14,30 @@ const mapApiItem = (apiItem: any): DriveItem => ({
   url: apiItem.type !== 'FOLDER' ? `${CONFIG.STATIC_HOST}/${apiItem.r2Key}` : undefined,
   mimeType: apiItem.mimeType,
   r2Key: apiItem.r2Key,
-  previews: apiItem.previews?.map((p: string) => p.startsWith('http') ? p : `${CONFIG.STATIC_HOST}/${p}`)
+  previews: apiItem.previews?.map((p: string) => p.startsWith('http') ? p : `${CONFIG.STATIC_HOST}/${p}`),
+  isLocked: apiItem.isLocked
 });
 
-export const useFiles = (folderId: string | null, search?: string) => {
+export const useFiles = (folderId: string | null, search?: string, password?: string) => {
   return useQuery({
-    queryKey: ['files', folderId, search],
+    queryKey: ['files', folderId, search, password],
     queryFn: async () => {
-      const result = await driveApi.fetchFiles(folderId, search);
-      if (result.code !== 0) throw new Error(result.message);
+      const result = await driveApi.fetchFiles(folderId, search, password);
+      // Handle the case where the server might return a non-0 code for auth errors
+      if (result.code !== 0) {
+        const err = new Error(result.message);
+        (err as any).code = result.code;
+        throw err;
+      }
       return result.data.items.map(mapApiItem);
     },
+    // Prevent infinite retries on authentication failure (e.g. 403)
+    retry: (failureCount, error: any) => {
+      if (error.message?.includes('403') || error.code === 403) return false;
+      return failureCount < 2;
+    },
+    // Don't refetch automatically on window focus if we might need a password
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -54,6 +67,12 @@ export const useDriveMutations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
   });
 
+  const toggleLock = useMutation({
+    mutationFn: ({ id, isLocked, password }: { id: string; isLocked: boolean; password?: string }) => 
+      driveApi.updateLockStatus(id, isLocked, password),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
+  });
+
   const deleteItems = useMutation({
     mutationFn: (ids: string[]) => Promise.all(ids.map(id => driveApi.deleteItem(id))),
     onSuccess: () => {
@@ -68,7 +87,7 @@ export const useDriveMutations = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['files'] }),
   });
 
-  return { createFolder, renameItem, deleteItems, moveItems };
+  return { createFolder, renameItem, toggleLock, deleteItems, moveItems };
 };
 
 export const useRecycleMutations = () => {
