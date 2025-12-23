@@ -161,7 +161,34 @@ async function apiFetch<T>(
   - 如果是文件夹：返回文件列表和分页信息
   - 如果是文件：返回单个文件信息
 
+**getAllShares()**
+- **功能**：获取所有分享列表
+- **参数**：
+  - `page`: 页码（可选，默认 1）
+  - `limit`: 每页数量（可选，默认 20）
+  - `fileId`: 按文件 ID 过滤（可选）
+- **返回**：`{ items: Share[], pagination: PaginationInfo }`
+- **使用场景**：分享管理页面
+
+**updateShare()**
+- **功能**：更新分享的配置
+- **参数**：
+  - `code`: 分享码
+  - `data`: 更新数据
+    - `password?: string | null` - 新密码（null 表示移除密码）
+    - `expiresAt?: string | null` - 新过期时间（null 表示移除限制）
+    - `maxViews?: number | null` - 新最大访问次数（null 表示移除限制）
+- **使用场景**：修改分享配置（暂未在前端实现）
+
+**deleteShare()**
+- **功能**：删除分享链接（取消分享）
+- **参数**：
+  - `code`: 分享码
+- **使用场景**：分享管理页面的取消分享功能
+
 **实现示例**：
+
+创建和访问分享：
 ```typescript
 // 1. 创建分享
 const shareRes = await driveApi.createShare({
@@ -177,6 +204,21 @@ const token = verifyRes.data.accessToken;
 
 // 3. 获取文件列表（携带令牌）
 const filesRes = await driveApi.getShareFiles(shareCode, undefined, token);
+```
+
+管理分享：
+```typescript
+// 1. 获取所有分享
+const sharesRes = await driveApi.getAllShares(1, 50);
+const shares = sharesRes.data.items;
+
+// 2. 删除分享
+await driveApi.deleteShare(shareCode);
+
+// 3. 更新分享（延期）
+await driveApi.updateShare(shareCode, {
+  expiresAt: '2025-12-31T23:59:59Z'
+});
 ```
 
 #### 文件上传

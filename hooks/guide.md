@@ -145,6 +145,109 @@ createFolder.mutate(
 
 ---
 
+#### 分享相关 Hooks
+
+**useShareInfo()**
+```typescript
+const useShareInfo = (code: string)
+```
+
+**功能**：获取分享的基本信息
+
+**缓存策略**：
+- queryKey: `['share-info', code]`
+- 用于分享页面判断是否需要密码
+
+**使用场景**：ShareView 组件获取分享信息
+
+---
+
+**useShareFiles()**
+```typescript
+const useShareFiles = (
+  code: string, 
+  subFolderId?: string, 
+  token?: string
+)
+```
+
+**功能**：获取分享的文件列表
+
+**缓存策略**：
+- queryKey: `['share-files', code, subFolderId, token]`
+- 不自动重试（403 错误需要密码验证）
+
+**使用场景**：ShareView 组件浏览分享内容
+
+---
+
+**useCreateShare()**
+```typescript
+const useCreateShare = () => {
+  return useMutation({ ... })
+}
+```
+
+**功能**：创建新的分享链接
+
+**参数**：
+- `fileId`: 文件或文件夹 ID
+- `password`: 访问密码（可选）
+- `expiresAt`: 过期时间（可选）
+- `maxViews`: 最大访问次数（可选）
+
+**使用场景**：PreviewModal 中的分享按钮
+
+---
+
+**useAllShares()**
+```typescript
+const useAllShares = (
+  page?: number, 
+  limit?: number, 
+  fileId?: string
+)
+```
+
+**功能**：获取所有分享列表
+
+**缓存策略**：
+- queryKey: `['shares', page, limit, fileId]`
+- 支持分页和按文件过滤
+
+**返回值**：
+- `data.items`: 分享列表
+- `data.pagination`: 分页信息
+
+**使用场景**：SharesManagementView 组件
+
+---
+
+**useShareMutations()**
+```typescript
+const useShareMutations = () => {
+  return { updateShare, deleteShare }
+}
+```
+
+**功能**：提供分享管理操作
+
+**Mutations 说明**：
+
+1. **updateShare**
+   - 参数：`{ code: string, data: UpdateShareData }`
+   - 成功后：刷新 `['shares']` 缓存
+   - 用途：修改密码、过期时间、访问次数限制
+
+2. **deleteShare**
+   - 参数：`code: string`
+   - 成功后：刷新 `['shares']` 缓存
+   - 用途：取消分享
+
+**使用场景**：SharesManagementView 组件
+
+---
+
 **useRecycleMutations()**
 ```typescript
 const useRecycleMutations = () => {

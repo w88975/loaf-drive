@@ -86,6 +86,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectRoot 
             to="/" 
             onClick={onSelectRoot} 
           />
+          {/* 分享管理页面 */}
+          <SidebarItem 
+            icon={<Icons.Search className="rotate-45" />} 
+            label="Shares" 
+            to="/shares"
+          />
           {/* 回收站页面 */}
           <SidebarItem 
             icon={<Icons.Trash />} 

@@ -173,5 +173,25 @@ export const driveApi = {
     }
     
     return apiFetch<ShareContentResponse>(url, { headers });
+  },
+
+  getAllShares: async (page?: number, limit?: number, fileId?: string) => {
+    let url = `${API_HOST}/api/shares?page=${page || 1}&limit=${limit || 20}`;
+    if (fileId) url += `&fileId=${fileId}`;
+    return apiFetch<{ items: any[], pagination: any }>(url);
+  },
+
+  updateShare: async (code: string, data: { password?: string | null, expiresAt?: string | null, maxViews?: number | null }) => {
+    return apiFetch<any>(`${API_HOST}/api/shares/${code}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteShare: async (code: string) => {
+    return apiFetch<any>(`${API_HOST}/api/shares/${code}`, {
+      method: 'DELETE'
+    });
   }
 };

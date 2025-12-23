@@ -144,3 +144,31 @@ export const useCreateShare = () => {
       driveApi.createShare(data)
   });
 };
+
+export const useAllShares = (page?: number, limit?: number, fileId?: string) => {
+  return useQuery({
+    queryKey: ['shares', page, limit, fileId],
+    queryFn: async () => {
+      const result = await driveApi.getAllShares(page, limit, fileId);
+      if (result.code !== 0) throw new Error(result.message);
+      return result.data;
+    }
+  });
+};
+
+export const useShareMutations = () => {
+  const queryClient = useQueryClient();
+
+  const updateShare = useMutation({
+    mutationFn: ({ code, data }: { code: string, data: { password?: string | null, expiresAt?: string | null, maxViews?: number | null } }) =>
+      driveApi.updateShare(code, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shares'] })
+  });
+
+  const deleteShare = useMutation({
+    mutationFn: (code: string) => driveApi.deleteShare(code),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['shares'] })
+  });
+
+  return { updateShare, deleteShare };
+};

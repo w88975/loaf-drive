@@ -7,11 +7,15 @@
 ├── api/                  # API 通信层
 ├── components/           # UI 组件层
 │   ├── drive/           # 文件列表核心组件
-│   ├── layout/          # 页面骨架组件
+│   ├── layout/          # 页面骨架组件（Header, Sidebar）
 │   ├── overlays/        # 弹出式交互组件
 │   └── preview/         # 多媒体预览组件
 ├── hooks/               # 逻辑抽象层
-├── views/               # 视图页面层（FilesView, ShareView, TrashView）
+├── views/               # 视图页面层
+│   ├── FilesView        # 文件管理主视图
+│   ├── ShareView        # 公开分享页（外部访问）
+│   ├── SharesManagementView  # 分享管理视图
+│   └── TrashView        # 回收站视图
 ├── index.tsx            # 应用入口
 ├── App.tsx              # 根组件与路由
 ├── types.ts             # 全局类型定义
@@ -97,6 +101,9 @@
    - 支持过期时间和访问次数限制
    - 独立的分享页面（ShareView）
    - 只读预览（不支持二次分享）
+   - 集中管理所有分享（SharesManagementView）
+   - 一键复制分享链接
+   - 取消分享功能
 
 ## 开发规范
 

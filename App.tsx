@@ -14,7 +14,8 @@ import { UploadPanel } from './components/overlays/UploadPanel';
 import { PreviewModal } from './components/overlays/PreviewModal';
 import { FilesView } from './views/FilesView';
 import { TrashView } from './views/TrashView';
-import { ShareView } from './views/ShareView'; // 新增
+import { ShareView } from './views/ShareView';
+import { SharesManagementView } from './views/SharesManagementView';
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -50,6 +51,7 @@ const App: React.FC = () => {
   }, [uploadTasks]);
 
   const isTrash = location.pathname === '/trash';
+  const isSharesManagement = location.pathname === '/shares';
   // 分享页不显示侧边栏和主 Header
   const isSharePage = location.pathname.startsWith('/share/');
 
@@ -83,8 +85,8 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col min-w-0 bg-white">
         <Header 
           onOpenSidebar={() => setIsSidebarOpen(true)}
-          currentFolderId={isTrash ? 'trash' : currentFolderId}
-          navigationHistory={isTrash ? [] : path}
+          currentFolderId={isTrash ? 'trash' : (isSharesManagement ? 'shares' : currentFolderId)}
+          navigationHistory={(isTrash || isSharesManagement) ? [] : path}
           onNavigate={handleNavigate}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -99,6 +101,7 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<FilesView key={currentFolderId || 'root'} currentFolderId={currentFolderId} setCurrentFolderId={handleNavigate} navigationHistory={path} searchQuery={searchQuery} viewMode={viewMode} onPreview={setPreviewItem} onUploadClick={() => document.getElementById('file-upload')?.click()} />} />
             <Route path="/trash" element={<TrashView searchQuery={searchQuery} viewMode={viewMode} />} />
+            <Route path="/shares" element={<SharesManagementView searchQuery={searchQuery} />} />
           </Routes>
         </div>
         <input id="file-upload" type="file" multiple className="hidden" onChange={(e) => handleUpload(e.target.files, currentFolderId)} />
