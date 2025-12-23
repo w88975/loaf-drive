@@ -11,6 +11,7 @@ import { ImageViewer } from './ImageViewer';
 import { VideoViewer } from './VideoViewer';
 import { AudioViewer } from './AudioViewer';
 import { TextViewer } from './TextViewer';
+import { PdfViewer } from './PdfViewer';
 import { UnsupportedViewer } from './UnsupportedViewer';
 
 interface PreviewContentProps {
@@ -37,6 +38,7 @@ export const PreviewContent: React.FC<PreviewContentProps> = ({ item }) => {
    * - video: VideoViewer - 视频播放器  
    * - audio: AudioViewer - 音频播放器（带旋转唱片动画）
    * - text: TextViewer - 文本/代码查看器（带语法高亮）
+   * - pdf: PdfViewer - PDF文档查看器
    * - default: UnsupportedViewer - 不支持格式的兜底组件
    */
   switch (category) {
@@ -48,6 +50,8 @@ export const PreviewContent: React.FC<PreviewContentProps> = ({ item }) => {
       return <AudioViewer item={item} />;
     case 'text':
       return <TextViewer item={item} />;
+    case 'pdf':
+      return <PdfViewer item={item} />;
     default:
       return <UnsupportedViewer item={item} onOpenAsText={() => setForcedCategory('text')} />;
   }
