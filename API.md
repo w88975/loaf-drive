@@ -693,14 +693,139 @@ curl "http://localhost:8787/api/shares/AbCd123456/download/file-uuid" \
   --output file.pdf
 ```
 
-### 删除分享
+### 获取所有分享列表
+`GET /api/shares`
+
+获取已创建的所有分享列表，支持分页和过滤。
+
+参数:
+- `page`: 页码 (默认 1)
+- `limit`: 每页数量 (默认 20)
+- `fileId`: 按文件ID过滤 (可选)
+
+**示例:**
+```bash
+# 获取所有分享
+curl "http://localhost:8787/api/shares"
+
+# 分页查询
+curl "http://localhost:8787/api/shares?page=2&limit=10"
+
+# 查询特定文件的分享
+curl "http://localhost:8787/api/shares?fileId=file-uuid"
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "id": "share1-uuid",
+        "code": "AbCd123456",
+        "fileId": "file-uuid",
+        "file": {
+          "id": "file-uuid",
+          "filename": "document.pdf",
+          "type": "DOCUMENT",
+          "size": 1024000
+        },
+        "hasPassword": true,
+        "expiresAt": "2024-12-31T23:59:59Z",
+        "views": 5,
+        "maxViews": 100,
+        "createdAt": "2024-01-01T00:00:00Z",
+        "updatedAt": "2024-01-01T00:00:00Z",
+        "shareUrl": "/share/AbCd123456"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 50,
+      "totalPages": 3
+    }
+  }
+}
+```
+
+### 更新分享
+`PATCH /api/shares/:code`
+
+更新分享的密码、过期时间或最大访问次数。
+
+Body (JSON):
+- `password`: 新密码 (可选，传 `null` 可移除密码)
+- `expiresAt`: 新过期时间 (可选，传 `null` 可移除过期时间)
+- `maxViews`: 新的最大访问次数 (可选，传 `null` 可移除限制)
+
+**示例:**
+```bash
+# 更新密码
+curl -X PATCH "http://localhost:8787/api/shares/AbCd123456" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "newpass123"}'
+
+# 延期（更新过期时间）
+curl -X PATCH "http://localhost:8787/api/shares/AbCd123456" \
+  -H "Content-Type: application/json" \
+  -d '{"expiresAt": "2025-12-31T23:59:59Z"}'
+
+# 移除密码
+curl -X PATCH "http://localhost:8787/api/shares/AbCd123456" \
+  -H "Content-Type: application/json" \
+  -d '{"password": null}'
+
+# 同时更新多个字段
+curl -X PATCH "http://localhost:8787/api/shares/AbCd123456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "password": "newpass",
+    "expiresAt": "2025-12-31T23:59:59Z",
+    "maxViews": 200
+  }'
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "share1-uuid",
+    "code": "AbCd123456",
+    "hasPassword": true,
+    "expiresAt": "2025-12-31T23:59:59Z",
+    "maxViews": 200,
+    "views": 5,
+    "updatedAt": "2024-01-02T10:30:00Z",
+    "message": "Share updated successfully"
+  }
+}
+```
+
+### 删除分享（取消分享）
 `DELETE /api/shares/:code`
 
-删除一个分享链接。
+删除一个分享链接，取消分享。
 
 **示例:**
 ```bash
 curl -X DELETE "http://localhost:8787/api/shares/AbCd123456"
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "code": "AbCd123456",
+    "message": "Share deleted"
+  }
+}
 ```
 
 ### 获取文件的所有分享
