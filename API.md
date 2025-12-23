@@ -4,13 +4,16 @@
 
 ## 功能特性
 
-- **文件上传**: 支持上传文件到 Cloudflare R2，并保存元数据到 D1。
-- **文件夹管理**: 支持创建虚拟文件夹 (模拟文件系统结构)。
-- **文件夹加锁**: 支持对文件夹进行加锁保护，访问加锁文件夹需要提供密码。
-- **文件检索**: 支持按文件夹、文件名搜索、文件类型筛选。
-- **文件删除**: 支持软删除。
-- **回收站**: 支持查看回收站、永久删除文件。
-- **文件预览**: 获取文件下载/预览链接。
+- **文件上传**: 
+  - 小文件直接上传（< 100MB）
+  - 大文件分片上传（支持断点续传，避免 413 错误）
+  - 支持上传文件到 Cloudflare R2，并保存元数据到 D1
+- **文件夹管理**: 支持创建虚拟文件夹 (模拟文件系统结构)
+- **文件夹加锁**: 支持对文件夹进行加锁保护，访问加锁文件夹需要提供密码
+- **文件检索**: 支持按文件夹、文件名搜索、文件类型筛选
+- **文件删除**: 支持软删除
+- **回收站**: 支持查看回收站、永久删除文件
+- **文件预览**: 获取文件下载/预览链接
 
 ## 技术栈
 
@@ -262,7 +265,11 @@ curl -X POST "http://localhost:8787/api/files/upload-preview" \
 ```
 
 ### 4. 上传文件
+
+#### 4.1 小文件直接上传
 `POST /api/files/upload`
+
+**适用场景**: 文件小于 100MB
 
 Body (FormData):
 - `file`: 文件对象 (必填)
@@ -305,6 +312,159 @@ curl -X POST "http://localhost:8787/api/files/upload" \
   }
 }
 ```
+
+#### 4.2 大文件分片上传
+**适用场景**: 文件大于 100MB，避免 413 错误
+
+**步骤 1: 初始化上传**
+`POST /api/files/upload/init`
+
+Body (JSON):
+- `filename`: 文件名 (必填)
+- `folderId`: 文件夹ID (可选)
+- `description`: 文件描述 (可选)
+- `tags`: 标签数组 (可选)
+- `totalSize`: 文件总大小（字节）(必填)
+- `mimeType`: 文件 MIME 类型 (可选)
+
+```bash
+curl -X POST "http://localhost:8787/api/files/upload/init" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "large-video.mp4",
+    "folderId": "root",
+    "totalSize": 524288000,
+    "mimeType": "video/mp4",
+    "tags": ["video", "large"]
+  }'
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "file-uuid",
+    "uploadId": "upload-id-xxx",
+    "r2Key": "root/file-uuid-large-video.mp4",
+    "filename": "large-video.mp4",
+    "type": "VIDEO"
+  }
+}
+```
+
+**步骤 2: 上传分片**
+`POST /api/files/upload/part`
+
+Body (FormData):
+- `chunk`: 分片数据 (必填)
+- `uploadId`: 上传会话ID (必填)
+- `r2Key`: R2存储键 (必填)
+- `partNumber`: 分片编号，从 1 开始 (必填)
+
+```bash
+# 上传第 1 个分片
+curl -X POST "http://localhost:8787/api/files/upload/part" \
+  -F "chunk=@./chunk-1" \
+  -F "uploadId=upload-id-xxx" \
+  -F "r2Key=root/file-uuid-large-video.mp4" \
+  -F "partNumber=1"
+
+# 上传第 2 个分片
+curl -X POST "http://localhost:8787/api/files/upload/part" \
+  -F "chunk=@./chunk-2" \
+  -F "uploadId=upload-id-xxx" \
+  -F "r2Key=root/file-uuid-large-video.mp4" \
+  -F "partNumber=2"
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "partNumber": 1,
+    "etag": "etag-xxx"
+  }
+}
+```
+
+**步骤 3: 完成上传**
+`POST /api/files/upload/complete`
+
+Body (JSON):
+- `id`: 文件ID (必填)
+- `uploadId`: 上传会话ID (必填)
+- `r2Key`: R2存储键 (必填)
+- `parts`: 分片信息数组 (必填)
+- `previews`: 预览图列表 (可选)
+
+```bash
+curl -X POST "http://localhost:8787/api/files/upload/complete" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "file-uuid",
+    "uploadId": "upload-id-xxx",
+    "r2Key": "root/file-uuid-large-video.mp4",
+    "parts": [
+      {"partNumber": 1, "etag": "etag-1"},
+      {"partNumber": 2, "etag": "etag-2"}
+    ],
+    "previews": ["previews/frame1.jpg"]
+  }'
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "file-uuid",
+    "filename": "large-video.mp4",
+    "status": "success",
+    "type": "VIDEO",
+    "size": 524288000
+  }
+}
+```
+
+**步骤 4（可选）: 取消上传**
+`POST /api/files/upload/abort`
+
+Body (JSON):
+- `id`: 文件ID (可选)
+- `uploadId`: 上传会话ID (必填)
+- `r2Key`: R2存储键 (必填)
+
+```bash
+curl -X POST "http://localhost:8787/api/files/upload/abort" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "file-uuid",
+    "uploadId": "upload-id-xxx",
+    "r2Key": "root/file-uuid-large-video.mp4"
+  }'
+```
+
+### 5. 选择上传方式
+
+| 文件大小 | 推荐方式 | 说明 |
+|---------|---------|------|
+| < 100MB | 直接上传 | 简单快速 |
+| 100MB - 5GB | 分片上传 | 避免超时和 413 错误 |
+| > 5GB | 分片上传 | 必须使用分片（R2 单次上传限制 5GB）|
+
+**分片大小建议**: 5MB - 100MB 每片
+
+📖 **完整的分片上传指南**: 参考 [CHUNKED-UPLOAD-GUIDE.md](./CHUNKED-UPLOAD-GUIDE.md)
+  - 详细的工作原理说明
+  - 完整的前端实现示例（JavaScript + React Native）
+  - 最佳实践和性能优化
+  - 错误处理和断点续传
+  - 故障排查指南
 
 ### 6. 更新文件信息
 `PATCH /api/files/:id`
@@ -352,13 +512,34 @@ curl -X PATCH "http://localhost:8787/api/files/folder-id-xxx" \
 curl "http://localhost:8787/api/files/12345678-1234-1234-1234-1234567890ab"
 ```
 
-### 8. 删除文件/文件夹
+### 8. 删除文件/文件夹（软删除）
 `DELETE /api/files/:id`
+
+**行为说明**:
+- 将文件/文件夹标记为删除（`isDeleted = 1`），移入回收站
+- **如果删除的是文件夹**：会递归标记该文件夹下的所有文件和子文件夹为删除
+- 删除的文件可以在回收站中查看和恢复
 
 **示例:**
 ```bash
-# 请替换 :id 为真实的文件 ID
+# 删除文件
 curl -X DELETE "http://localhost:8787/api/files/12345678-1234-1234-1234-1234567890ab"
+
+# 删除文件夹（会递归标记所有子项）
+curl -X DELETE "http://localhost:8787/api/files/folder-id-xxx"
+```
+
+**响应示例:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "folder-id-xxx",
+    "deletedCount": 15,
+    "message": "Folder and all contents moved to recycle bin"
+  }
+}
 ```
 
 ### 9. 获取文件内容 (下载)
@@ -451,7 +632,7 @@ curl "http://localhost:8787/api/recycle-bin?search=report"
 }
 ```
 
-### 12. 清空回收站
+### 12. 清空回收站（永久删除）
 `DELETE /api/recycle-bin`
 
 永久删除回收站中的文件（包括数据库记录和 R2 存储的实际文件）。
@@ -459,23 +640,30 @@ curl "http://localhost:8787/api/recycle-bin?search=report"
 参数:
 - `id`: 文件ID (可选，如果提供则只删除指定文件，否则清空整个回收站)
 
+**重要说明**:
+- **删除文件夹**：会递归删除该文件夹下的所有文件和子文件夹（即使子项未标记为删除）
+- **清空回收站**：会删除所有标记为删除的文件，以及这些文件夹下的所有子项
+- **彻底删除**：同时删除 R2 存储中的实际文件和数据库记录，操作不可恢复
+- **防止幽灵文件**：确保不会留下孤立的子文件占用存储空间
+
 **示例:**
 ```bash
-# 永久删除单个文件
+# 永久删除单个文件（如果是文件夹，会递归删除所有子项）
 curl -X DELETE "http://localhost:8787/api/recycle-bin?id=12345678-1234-1234-1234-1234567890ab"
 
-# 清空整个回收站
+# 清空整个回收站（递归删除所有相关文件）
 curl -X DELETE "http://localhost:8787/api/recycle-bin"
 ```
 
-**响应示例 (删除单个文件):**
+**响应示例 (删除单个文件夹):**
 ```json
 {
   "code": 0,
   "message": "success",
   "data": {
     "id": "12345678-1234-1234-1234-1234567890ab",
-    "message": "File permanently deleted"
+    "deletedCount": 25,
+    "message": "File and all contents permanently deleted"
   }
 }
 ```
@@ -486,7 +674,7 @@ curl -X DELETE "http://localhost:8787/api/recycle-bin"
   "code": 0,
   "message": "success",
   "data": {
-    "deletedCount": 5,
+    "deletedCount": 50,
     "message": "Recycle bin cleared"
   }
 }

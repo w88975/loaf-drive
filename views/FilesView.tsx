@@ -200,7 +200,6 @@ export const FilesView: React.FC<FilesViewProps> = ({
         ) : sortedItems.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-30 uppercase font-bold italic">Empty Directory</div>
         ) : viewMode === 'grid' ? (
-          /* Fixed: Removed 'setSelectedIds' as it is not a valid prop on GridView */
           <GridView 
             items={sortedItems} selectedIds={selectedIds}
             onItemClick={(item) => selectedIds.size > 0 ? toggleSelect(item.id) : item.type === 'folder' ? handleNavigate(item) : onPreview(item)}
@@ -238,10 +237,16 @@ export const FilesView: React.FC<FilesViewProps> = ({
       )}
 
       {activeModal === 'delete' && (
-        <DeleteModal count={selectedIds.size || (targetItem ? 1 : 0)} onClose={() => setActiveModal(null)} onConfirm={async () => { 
-          const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
-          deleteItems.mutate(ids); setSelectedIds(new Set()); setActiveModal(null); 
-        }} />
+        <DeleteModal 
+          title="Move to Trash?"
+          count={selectedIds.size || (targetItem ? 1 : 0)} 
+          isPermanent={false}
+          onClose={() => setActiveModal(null)} 
+          onConfirm={async () => { 
+            const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
+            deleteItems.mutate(ids); setSelectedIds(new Set()); setActiveModal(null); 
+          }} 
+        />
       )}
       {activeModal === 'move' && <MoveModal count={selectedIds.size} onClose={() => setActiveModal(null)} onConfirm={async (destId) => { moveItems.mutate({ ids: [...selectedIds], targetId: destId }); setSelectedIds(new Set()); setActiveModal(null); }} />}
 

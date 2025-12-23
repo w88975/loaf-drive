@@ -33,6 +33,26 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
     });
   }, [items, sortKey, sortOrder]);
 
+  const handleConfirmClear = () => {
+    clearBin.mutate(undefined, {
+      onSuccess: () => {
+        setSelectedIds(new Set());
+        setActiveModal(null);
+      }
+    });
+  };
+
+  const handleConfirmPermanentDelete = () => {
+    const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
+    // Note: The API technically supports one ID at a time in the query param or clearing all.
+    // If the server handles one ID, we iterate. If it handles multiple, we'd adjust.
+    // Based on API.md: DELETE /api/recycle-bin?id=xxx
+    Promise.all(ids.map(id => permanentlyDelete.mutateAsync(id))).then(() => {
+      setSelectedIds(new Set());
+      setActiveModal(null);
+    });
+  };
+
   return (
     <div className="flex flex-col h-full" onClick={() => selectedIds.size > 0 && setSelectedIds(new Set())}>
       <div className="p-4 md:p-6 pb-2">
@@ -72,13 +92,34 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
         )}
       </div>
 
-      {activeModal === 'clear' && <DeleteModal title="Empty Trash?" count={items.length} onClose={() => setActiveModal(null)} onConfirm={() => { clearBin.mutate(); setActiveModal(null); }} />}
-      {activeModal === 'delete-permanent' && <DeleteModal title="Delete Permanently?" count={selectedIds.size || (targetItem ? 1 : 0)} onClose={() => setActiveModal(null)} onConfirm={() => {
-        const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
-        ids.forEach(id => permanentlyDelete.mutate(id)); setSelectedIds(new Set()); setActiveModal(null);
-      }} />}
+      {activeModal === 'clear' && (
+        <DeleteModal 
+          title="Empty Trash?" 
+          count={items.length} 
+          isPermanent={true}
+          onClose={() => setActiveModal(null)} 
+          onConfirm={handleConfirmClear} 
+        />
+      )}
+      
+      {activeModal === 'delete-permanent' && (
+        <DeleteModal 
+          title="Delete Permanently?" 
+          count={selectedIds.size || (targetItem ? 1 : 0)} 
+          isPermanent={true}
+          onClose={() => setActiveModal(null)} 
+          onConfirm={handleConfirmPermanentDelete} 
+        />
+      )}
 
-      {selectedIds.size > 0 && <SelectionBar count={selectedIds.size} onMove={() => {}} onDelete={() => setActiveModal('delete-permanent')} onClear={() => setSelectedIds(new Set())} />}
+      {selectedIds.size > 0 && (
+        <SelectionBar 
+          count={selectedIds.size} 
+          onMove={() => {}} 
+          onDelete={() => setActiveModal('delete-permanent')} 
+          onClear={() => setSelectedIds(new Set())} 
+        />
+      )}
     </div>
   );
 };

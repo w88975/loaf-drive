@@ -54,13 +54,21 @@ const App: React.FC = () => {
       onDragEnter={(e) => { e.preventDefault(); if (!isTrash) dragCounter.current++; if (e.dataTransfer.items.length && !isTrash) setIsDragging(true); }}
       onDragLeave={(e) => { e.preventDefault(); if (!isTrash) dragCounter.current--; if (dragCounter.current === 0) setIsDragging(false); }}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); setIsDragging(false); dragCounter.current = 0; if (!isTrash) handleUpload(e.dataTransfer.files, currentFolderId); }}
+      onDrop={(e) => { 
+        e.preventDefault(); 
+        setIsDragging(false); 
+        dragCounter.current = 0; 
+        if (!isTrash) {
+          // Pass e.dataTransfer directly to support directory traversal
+          handleUpload(e.dataTransfer, currentFolderId); 
+        }
+      }}
     >
       {isDragging && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm pointer-events-none flex items-center justify-center p-8">
           <div className="w-full h-full border-4 border-dashed border-yellow-400 flex flex-col items-center justify-center text-yellow-400 space-y-4">
             <Icons.Plus className="w-24 h-24 animate-bounce" />
-            <span className="text-4xl font-bold italic uppercase tracking-widest">Drop files to upload</span>
+            <span className="text-4xl font-bold italic uppercase tracking-widest">Drop folders or files to upload</span>
           </div>
         </div>
       )}

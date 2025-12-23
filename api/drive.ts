@@ -4,6 +4,36 @@ import { CONFIG } from '../config';
 
 const { API_HOST } = CONFIG;
 
+/**
+ * Enhanced fetch with retry logic and error handling
+ */
+async function apiFetch<T>(url: string, options: RequestInit = {}, retries = 2): Promise<ApiResponse<T>> {
+  try {
+    const response = await fetch(url, options);
+    
+    // If the server returns a 5xx error, we might want to retry
+    if (!response.ok && retries > 0 && response.status >= 500) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return apiFetch(url, options, retries - 1);
+    }
+
+    // Attempt to parse JSON even if status is not OK to get the error message from the API
+    const result = await response.json().catch(() => ({
+      code: -1,
+      message: `HTTP Error ${response.status}: ${response.statusText}`
+    }));
+
+    return result as ApiResponse<T>;
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return apiFetch(url, options, retries - 1);
+    }
+    // Re-throw with a more descriptive message if it's a network error
+    throw new Error(error instanceof Error ? error.message : 'Network error or CORS failure');
+  }
+}
+
 export const driveApi = {
   fetchFiles: async (folderId: string | null, search?: string, password?: string) => {
     const fid = folderId || 'root';
@@ -15,53 +45,45 @@ export const driveApi = {
       headers['x-folder-password'] = password;
     }
 
-    const res = await fetch(url, { headers });
-    return (await res.json()) as ApiResponse<{ items: ApiFileItem[] }>;
+    return apiFetch<{ items: ApiFileItem[] }>(url, { headers });
   },
 
   fetchRecycleBin: async (search?: string) => {
     let url = `${API_HOST}/api/recycle-bin?limit=200`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
-    const res = await fetch(url);
-    return (await res.json()) as ApiResponse<{ items: ApiFileItem[] }>;
+    return apiFetch<{ items: ApiFileItem[] }>(url);
   },
 
   fetchTree: async () => {
-    const res = await fetch(`${API_HOST}/api/folders/tree`);
-    return (await res.json()) as ApiResponse<FolderTreeItem[]>;
+    return apiFetch<FolderTreeItem[]>(`${API_HOST}/api/folders/tree`);
   },
 
   createFolder: async (name: string, parentId: string | null) => {
-    const res = await fetch(`${API_HOST}/api/files/folder`, {
+    return apiFetch<any>(`${API_HOST}/api/files/folder`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, folderId: parentId || 'root' })
     });
-    return await res.json();
   },
 
   deleteItem: async (id: string) => {
-    const res = await fetch(`${API_HOST}/api/files/${id}`, { method: 'DELETE' });
-    return await res.json();
+    return apiFetch<any>(`${API_HOST}/api/files/${id}`, { method: 'DELETE' });
   },
 
   permanentlyDeleteItem: async (id: string) => {
-    const res = await fetch(`${API_HOST}/api/recycle-bin?id=${id}`, { method: 'DELETE' });
-    return await res.json();
+    return apiFetch<any>(`${API_HOST}/api/recycle-bin?id=${id}`, { method: 'DELETE' });
   },
 
   clearRecycleBin: async () => {
-    const res = await fetch(`${API_HOST}/api/recycle-bin`, { method: 'DELETE' });
-    return await res.json();
+    return apiFetch<any>(`${API_HOST}/api/recycle-bin`, { method: 'DELETE' });
   },
 
   renameItem: async (id: string, newName: string) => {
-    const res = await fetch(`${API_HOST}/api/files/${id}`, {
+    return apiFetch<any>(`${API_HOST}/api/files/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: newName })
     });
-    return await res.json();
   },
 
   updateLockStatus: async (id: string, isLocked: boolean, password?: string) => {
@@ -70,61 +92,59 @@ export const driveApi = {
       headers['x-folder-password'] = password;
     }
 
-    const res = await fetch(`${API_HOST}/api/files/${id}`, {
+    return apiFetch<any>(`${API_HOST}/api/files/${id}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ isLocked })
     });
-    return await res.json();
   },
 
   moveItems: async (ids: string[], targetFolderId: string | null) => {
     const folderId = targetFolderId || 'root';
-    return Promise.all(ids.map(id => 
-      fetch(`${API_HOST}/api/files/${id}`, {
+    // We do these in parallel but return a collective result
+    const results = await Promise.all(ids.map(id => 
+      apiFetch<any>(`${API_HOST}/api/files/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folderId })
       })
     ));
+    return results[0]; // Simplified return
   },
 
   uploadPreview: async (file: Blob) => {
     const fd = new FormData();
-    fd.append('file', file);
-    const res = await fetch(`${API_HOST}/api/files/upload-preview`, {
+    // Explicitly provide a filename for the blob to ensure multipart consistency
+    fd.append('file', file, 'preview.jpg');
+    return apiFetch<{ r2Key: string }>(`${API_HOST}/api/files/upload-preview`, {
       method: 'POST',
       body: fd
     });
-    return (await res.json()) as ApiResponse<{ r2Key: string }>;
   },
 
   getUploadUrl: () => `${API_HOST}/api/files/upload`,
 
   // Chunked Upload API
   uploadInit: async (data: { filename: string, folderId: string, totalSize: number, mimeType: string }) => {
-    const res = await fetch(`${API_HOST}/api/files/upload/init`, {
+    return apiFetch<{ id: string, uploadId: string, r2Key: string, filename: string }>(`${API_HOST}/api/files/upload/init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    return (await res.json()) as ApiResponse<{ id: string, uploadId: string, r2Key: string, filename: string }>;
   },
 
   uploadPart: async (fd: FormData) => {
-    const res = await fetch(`${API_HOST}/api/files/upload/part`, {
+    return apiFetch<{ partNumber: number, etag: string }>(`${API_HOST}/api/files/upload/part`, {
       method: 'POST',
       body: fd
     });
-    return (await res.json()) as ApiResponse<{ partNumber: number, etag: string }>;
   },
 
   uploadComplete: async (data: { id: string, uploadId: string, r2Key: string, parts: { partNumber: number, etag: string }[], previews?: string[] }) => {
-    const res = await fetch(`${API_HOST}/api/files/upload/complete`, {
+    return apiFetch<ApiFileItem>(`${API_HOST}/api/files/upload/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    return (await res.json()) as ApiResponse<ApiFileItem>;
   }
 };

@@ -52,8 +52,8 @@ export interface VideoFrame {
 
 export async function getImageThumbnailWeb(
   imageUrl: string,
-  width: number = 100,
-  height: number = 100
+  width: number = 150,
+  height: number = 150
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -73,7 +73,7 @@ export async function getImageThumbnailWeb(
       ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
       resolve(canvas.toDataURL('image/jpeg', 0.8));
     };
-    img.onerror = reject;
+    img.onerror = () => reject(new Error('Failed to load image for thumbnail'));
     img.src = imageUrl;
   });
 }

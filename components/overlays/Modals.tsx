@@ -95,14 +95,46 @@ export const PasswordModal: React.FC<{ folderName: string, onClose: () => void, 
   );
 };
 
-export const DeleteModal: React.FC<{ title?: string, count: number, onClose: () => void, onConfirm: () => void }> = ({ title = "Delete Items?", count, onClose, onConfirm }) => (
+interface DeleteModalProps {
+  title?: string;
+  count: number;
+  isPermanent?: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+export const DeleteModal: React.FC<DeleteModalProps> = ({ 
+  title = "Delete Items?", 
+  count, 
+  isPermanent = false, 
+  onClose, 
+  onConfirm 
+}) => (
   <ModalShell title={title} onClose={onClose} isError footer={
     <>
       <button onClick={onClose} className="flex-1 border-2 border-black p-2 font-bold uppercase hover:bg-gray-100">Cancel</button>
-      <button onClick={onConfirm} className="flex-1 bg-red-600 text-white p-2 font-bold uppercase hover:bg-red-700 transition-colors border-2 border-black">Delete</button>
+      <button onClick={onConfirm} className="flex-1 bg-red-600 text-white p-2 font-bold uppercase hover:bg-red-700 transition-colors border-2 border-black">
+        {isPermanent ? 'Delete Permanently' : 'Move to Trash'}
+      </button>
     </>
   }>
-    <p className="text-xs uppercase font-bold">Are you sure you want to delete {count} items? This action is permanent.</p>
+    <div className="space-y-3">
+      <p className="text-xs uppercase font-bold">
+        {isPermanent 
+          ? `Are you sure you want to PERMANENTLY delete ${count} item(s)?` 
+          : `Are you sure you want to move ${count} item(s) to the recycle bin?`}
+      </p>
+      <div className="bg-red-50 border-l-4 border-red-600 p-2">
+        <p className="text-[10px] uppercase font-black text-red-700 italic">
+          Notice: Deleting folders will recursively include all their contents.
+        </p>
+      </div>
+      {isPermanent && (
+        <p className="text-[10px] uppercase font-bold text-red-500 underline">
+          This action cannot be undone.
+        </p>
+      )}
+    </div>
   </ModalShell>
 );
 

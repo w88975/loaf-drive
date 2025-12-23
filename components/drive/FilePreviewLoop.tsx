@@ -15,7 +15,7 @@ export const FilePreviewLoop: React.FC<FilePreviewLoopProps> = ({ previews, alt 
 
     const intervalId = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % previews.length);
-    }, 800);
+    }, 300); // Updated to 300ms as requested
 
     return () => clearInterval(intervalId);
   }, [previews.length]);
