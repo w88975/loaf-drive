@@ -1,3 +1,13 @@
+/**
+ * 文件上传引擎 Hook
+ * 功能：提供完整的文件和文件夹上传能力
+ * 核心特性：
+ * 1. 并发上传 - 多个文件同时上传，充分利用带宽
+ * 2. 分片上传 - 大文件（>100MB）自动分片，提高可靠性
+ * 3. 客户端预览 - 上传前生成视频帧和图片缩略图
+ * 4. 文件夹遍历 - 支持拖拽整个文件夹，递归创建目录结构
+ * 5. 进度跟踪 - 实时显示每个文件的上传进度和状态
+ */
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -5,14 +15,39 @@ import { UploadTask } from '../types';
 import { driveApi } from '../api/drive';
 import { generateId, getVideoFramesWeb, getImageThumbnailWeb, dataURItoBlob } from '../utils';
 
-const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB per chunk
-const CHUNKED_THRESHOLD = 100 * 1024 * 1024; // 100MB threshold
+const CHUNK_SIZE = 10 * 1024 * 1024;
+const CHUNKED_THRESHOLD = 100 * 1024 * 1024;
 
 export const useUpload = () => {
+  /**
+   * 上传任务队列
+   * 存储所有正在上传/已完成/失败的任务
+   */
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+  
+  /**
+   * 上传面板显示状态
+   */
   const [showUploadPanel, setShowUploadPanel] = useState(false);
+  
   const queryClient = useQueryClient();
 
+  /**
+   * 上传单个文件的核心函数
+   * 功能：处理单个文件的完整上传流程
+   * @param file 要上传的文件对象
+   * @param targetFolderId 目标文件夹ID
+   * 
+   * 工作流程：
+   * 1. 创建上传任务并加入队列
+   * 2. 生成预览图（视频/图片）- 状态：processing
+   * 3. 上传文件本体 - 状态：uploading
+   *    - 大文件（>100MB）：分片上传
+   *    - 小文件：直接上传
+   * 4. 完成并刷新文件列表 - 状态：completed
+   * 
+   * 所有预览处理在客户端完成，不占用服务器资源
+   */
   const uploadSingleFile = async (file: File, targetFolderId: string) => {
     const taskId = generateId();
     const task: UploadTask = {
@@ -30,7 +65,10 @@ export const useUpload = () => {
     let previewR2Keys: string[] = [];
 
     try {
-      // Step 1: Pre-processing (Previews)
+      /**
+       * 第一阶段：预览图生成和上传
+       * 在文件上传前完成，用于列表中的封面展示
+       */
       if (isVideo || isImage) {
         setUploadTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'processing' } : t));
         
@@ -53,7 +91,6 @@ export const useUpload = () => {
         } else if (isImage) {
           const imageUrl = URL.createObjectURL(file);
           try {
-            // Updated to 150x150 for better visual quality
             const thumbDataUri = await getImageThumbnailWeb(imageUrl, 150, 150);
             const blob = dataURItoBlob(thumbDataUri);
             const result = await driveApi.uploadPreview(blob);
@@ -68,8 +105,20 @@ export const useUpload = () => {
         }
       }
 
-      // Step 2: Main Upload (Simple or Chunked)
+      /**
+       * 第二阶段：文件主体上传
+       * 根据文件大小选择上传策略
+       */
       if (file.size > CHUNKED_THRESHOLD) {
+        /**
+         * 分片上传流程（大文件 >100MB）
+         * 优势：提高大文件上传的稳定性和可恢复性
+         * 
+         * 流程：
+         * 1. 初始化上传会话，获取 uploadId
+         * 2. 循环上传每个分片，收集 ETag
+         * 3. 通知后端合并分片
+         */
         setUploadTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'uploading' } : t));
         
         const initRes = await driveApi.uploadInit({
@@ -121,6 +170,10 @@ export const useUpload = () => {
         }
 
       } else {
+        /**
+         * 直接上传流程（小文件 <100MB）
+         * 使用 XMLHttpRequest 支持进度回调和取消功能
+         */
         setUploadTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'uploading' } : t));
 
         const fd = new FormData();
@@ -133,6 +186,10 @@ export const useUpload = () => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', driveApi.getUploadUrl());
 
+        /**
+         * 监听上传进度事件
+         * 实时更新任务的 progress 字段
+         */
         xhr.upload.onprogress = (e) => {
           if (e.lengthComputable) {
             const progress = (e.loaded / e.total) * 100;
@@ -159,6 +216,10 @@ export const useUpload = () => {
           xhr.onabort = () => reject(new Error('Upload aborted'));
         });
 
+        /**
+         * 保存 XHR 实例到任务对象
+         * 用于支持取消上传功能（调用 xhr.abort()）
+         */
         setUploadTasks(prev => prev.map(t => t.id === taskId ? { ...t, xhr } : t));
         xhr.send(fd);
         await resultPromise;
@@ -169,13 +230,26 @@ export const useUpload = () => {
     }
   };
 
+  /**
+   * 递归处理文件系统条目（文件或文件夹）
+   * 功能：遍历拖拽的文件夹结构，递归创建目录并上传文件
+   * @param entry FileSystemEntry 对象（由 webkitGetAsEntry 获取）
+   * @param parentFolderId 父文件夹ID
+   * 
+   * 工作流程：
+   * - 文件：直接调用 uploadSingleFile（并发）
+   * - 文件夹：先创建文件夹，获取新ID后递归处理子项
+   * 
+   * 并发策略：
+   * - 同级文件并发上传
+   * - 同级文件夹并发创建
+   * - 子项必须等待父文件夹创建完成（需要父ID）
+   */
   const processEntry = async (entry: any, parentFolderId: string) => {
     if (entry.isFile) {
       const file = await new Promise<File>((resolve, reject) => entry.file(resolve, reject));
-      // Concurrently start file upload
       uploadSingleFile(file, parentFolderId);
     } else if (entry.isDirectory) {
-      // Must await folder creation to get ID for children, but siblings can be concurrent
       const res = await driveApi.createFolder(entry.name, parentFolderId);
       if (res.code === 0) {
         const newFolderId = res.data.id;
@@ -190,7 +264,6 @@ export const useUpload = () => {
 
         let entries = await readEntries();
         while (entries.length > 0) {
-          // Process all entries in this batch concurrently
           for (const childEntry of entries) {
             processEntry(childEntry, newFolderId);
           }
@@ -202,6 +275,18 @@ export const useUpload = () => {
     }
   };
 
+  /**
+   * 上传处理主函数
+   * 功能：统一处理拖拽上传和点击上传两种输入方式
+   * @param input 输入源（拖拽的 DataTransfer 或点击选择的 FileList）
+   * @param currentFolderId 当前文件夹ID
+   * 
+   * 处理逻辑：
+   * - DataTransfer：使用 webkitGetAsEntry 遍历文件夹结构
+   * - FileList：直接遍历文件列表
+   * 
+   * 所有文件和文件夹并发处理，充分利用带宽
+   */
   const handleUpload = useCallback(async (input: DataTransfer | FileList | null, currentFolderId: string | null) => {
     if (!input) return;
     setShowUploadPanel(true);
@@ -212,19 +297,22 @@ export const useUpload = () => {
       for (const item of items) {
         const entry = item.webkitGetAsEntry();
         if (entry) {
-          // Start process concurrently
           processEntry(entry, targetId);
         }
       }
     } else {
       const files = Array.from(input);
       for (const file of files) {
-        // Start process concurrently
         uploadSingleFile(file, targetId);
       }
     }
   }, [queryClient]);
 
+  /**
+   * 取消上传
+   * 功能：中止正在上传的文件（调用 XHR.abort）
+   * @param id 任务ID
+   */
   const cancelUpload = (id: string) => {
     setUploadTasks(prev => {
       const task = prev.find(t => t.id === id);
@@ -233,6 +321,10 @@ export const useUpload = () => {
     });
   };
 
+  /**
+   * 清除历史记录
+   * 功能：移除已完成/失败/取消的任务，只保留正在进行的任务
+   */
   const clearHistory = () => setUploadTasks(prev => prev.filter(t => t.status === 'uploading' || t.status === 'processing'));
 
   return { uploadTasks, showUploadPanel, setShowUploadPanel, handleUpload, cancelUpload, clearHistory };

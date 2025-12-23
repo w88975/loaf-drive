@@ -1,13 +1,29 @@
+/**
+ * 全局常量和静态资源文件
+ * 功能：定义极客新丑风设计语言的颜色系统和 SVG 图标库
+ */
 
 import React from 'react';
 
+/**
+ * 全局配色方案（极客新丑风 Geek-Brutalism）
+ * - primary: 纯黑色 - 主要文字和边框
+ * - secondary: 明黄色 - Hover/Active 状态的点睛色
+ * - bg: 纯白色 - 背景色
+ * - border: 浅灰色 - 次要边框
+ */
 export const COLORS = {
   primary: '#000000',
-  secondary: '#FDE047', // Tailwind yellow-300
+  secondary: '#FDE047',
   bg: '#FFFFFF',
   border: '#E5E7EB',
 };
 
+/**
+ * SVG 图标组件库
+ * 功能：集中管理所有 UI 图标，采用函数式组件封装
+ * 所有图标支持通过 className 属性自定义样式
+ */
 export const Icons = {
   Folder: ({ className }: { className?: string }) => (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>

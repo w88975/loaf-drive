@@ -1,3 +1,14 @@
+/**
+ * 回收站视图组件
+ * 功能：显示和管理回收站中的已删除文件
+ * 核心特性：
+ * 1. 永久删除 - 彻底删除文件，清理 R2 存储
+ * 2. 清空回收站 - 一键删除所有文件
+ * 3. 双视图模式 - 网格和列表视图
+ * 4. 多选批量删除 - 支持选择多个文件批量操作
+ * 
+ * 注意：回收站中的文件无法预览、重命名或移动
+ */
 
 import React, { useState, useMemo } from 'react';
 import { Icons } from '../constants';
@@ -14,15 +25,39 @@ interface TrashViewProps {
 }
 
 export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) => {
+  /**
+   * 多选状态：已选中的文件 ID 集合
+   */
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  /**
+   * 排序字段和方向
+   */
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  
+  /**
+   * 当前激活的模态框类型
+   * - clear: 清空回收站确认
+   * - delete-permanent: 永久删除确认
+   */
   const [activeModal, setActiveModal] = useState<'clear' | 'delete-permanent' | null>(null);
+  
+  /**
+   * 当前操作的目标项
+   */
   const [targetItem, setTargetItem] = useState<DriveItem | null>(null);
 
+  /**
+   * 获取回收站文件列表和操作方法
+   */
   const { data: items = [], isLoading } = useRecycleBin(searchQuery);
   const { permanentlyDelete, clearBin } = useRecycleMutations();
 
+  /**
+   * 排序后的文件列表
+   * 注意：回收站不区分文件夹和文件，直接按字段排序
+   */
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
       const valA = a[sortKey] || '';
@@ -33,6 +68,10 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
     });
   }, [items, sortKey, sortOrder]);
 
+  /**
+   * 处理清空回收站确认
+   * 功能：删除回收站中的所有文件
+   */
   const handleConfirmClear = () => {
     clearBin.mutate(undefined, {
       onSuccess: () => {
@@ -42,11 +81,13 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
     });
   };
 
+  /**
+   * 处理永久删除确认
+   * 功能：彻底删除选中的文件（批量或单个）
+   * API 限制：后端接口每次只能删除一个文件，因此使用 Promise.all 并发请求
+   */
   const handleConfirmPermanentDelete = () => {
     const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []);
-    // Note: The API technically supports one ID at a time in the query param or clearing all.
-    // If the server handles one ID, we iterate. If it handles multiple, we'd adjust.
-    // Based on API.md: DELETE /api/recycle-bin?id=xxx
     Promise.all(ids.map(id => permanentlyDelete.mutateAsync(id))).then(() => {
       setSelectedIds(new Set());
       setActiveModal(null);
@@ -55,6 +96,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
 
   return (
     <div className="flex flex-col h-full" onClick={() => selectedIds.size > 0 && setSelectedIds(new Set())}>
+      {/* 工具栏：清空回收站按钮 */}
       <div className="p-4 md:p-6 pb-2">
         <button 
           onClick={() => setActiveModal('clear')} 
@@ -65,33 +107,46 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
         </button>
       </div>
 
+      {/* 文件列表区域 */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        {/* 加载中状态 */}
         {isLoading ? (
           <div className="h-full flex items-center justify-center"><Icons.Grid className="w-10 h-10 animate-spin" /></div>
+        
+        /* 空回收站状态 */
         ) : items.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-30 uppercase font-bold italic">Recycle Bin is Empty</div>
+        
+        /* 网格视图 */
         ) : viewMode === 'grid' ? (
           <GridView 
             items={sortedItems} selectedIds={selectedIds}
             onItemClick={(item) => setSelectedIds(prev => { const n = new Set(prev); if (n.has(item.id)) n.delete(item.id); else n.add(item.id); return n; })}
-            onItemLongPress={() => {}} onContextMenu={() => {}}
-            onRename={() => {}} onMove={() => {}}
+            onItemLongPress={() => {}}
+            onContextMenu={() => {}}
+            onRename={() => {}}
+            onMove={() => {}}
             onDelete={(item) => { setTargetItem(item); setActiveModal('delete-permanent'); }}
           />
+        
+        /* 列表视图 */
         ) : (
           <ListView 
             items={sortedItems} selectedIds={selectedIds}
             onItemClick={(item) => setSelectedIds(prev => { const n = new Set(prev); if (n.has(item.id)) n.delete(item.id); else n.add(item.id); return n; })}
-            onItemLongPress={() => {}} onContextMenu={() => {}}
+            onItemLongPress={() => {}}
+            onContextMenu={() => {}}
             onSelectAll={() => setSelectedIds(selectedIds.size === items.length ? new Set() : new Set(items.map(i => i.id)))}
             onSort={(key) => { if (sortKey === key) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc'); else { setSortKey(key); setSortOrder('asc'); } }}
             sortKey={sortKey} sortOrder={sortOrder}
-            onRename={() => {}} onMove={() => {}}
+            onRename={() => {}}
+            onMove={() => {}}
             onDelete={(item) => { setTargetItem(item); setActiveModal('delete-permanent'); }}
           />
         )}
       </div>
 
+      {/* 清空回收站确认模态框 */}
       {activeModal === 'clear' && (
         <DeleteModal 
           title="Empty Trash?" 
@@ -102,6 +157,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
         />
       )}
       
+      {/* 永久删除确认模态框 */}
       {activeModal === 'delete-permanent' && (
         <DeleteModal 
           title="Delete Permanently?" 
@@ -112,6 +168,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
         />
       )}
 
+      {/* 多选操作栏：注意回收站不支持移动功能 */}
       {selectedIds.size > 0 && (
         <SelectionBar 
           count={selectedIds.size} 

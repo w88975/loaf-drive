@@ -1,18 +1,44 @@
+/**
+ * Modals.tsx
+ * 
+ * 【模态框组件集合】
+ * 
+ * 此文件提供了所有用户交互所需的模态框组件，包括：
+ * - 新建文件夹模态框
+ * - 重命名模态框
+ * - 密码输入模态框
+ * - 删除确认模态框
+ * - 移动文件/文件夹模态框
+ * 
+ * 所有模态框均基于统一的 ModalShell 包装器，确保一致的 UI 风格
+ */
 
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../../constants';
 import { DriveItem, FolderTreeItem } from '../../types';
 import { driveApi } from '../../api/drive';
 
+/**
+ * 模态框通用包装器的 Props 接口
+ */
 interface ModalShellProps {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-  widthClass?: string;
-  isError?: boolean;
+  title: string;                   // 模态框标题
+  onClose: () => void;              // 关闭回调
+  children: React.ReactNode;        // 模态框内容
+  footer?: React.ReactNode;         // 底部按钮区域（可选）
+  widthClass?: string;              // Tailwind 宽度类名（默认 max-w-sm）
+  isError?: boolean;                // 是否为错误/警告类型（影响标题颜色）
 }
 
+/**
+ * 【模态框通用壳组件】
+ * 
+ * 提供统一的模态框外观和行为：
+ * - 全屏半透明遮罩
+ * - Geek-Brutalism 风格的黑色边框和阴影
+ * - 点击遮罩关闭，点击内容区阻止事件冒泡
+ * - z-index 为 120，确保位于所有内容之上
+ */
 const ModalShell: React.FC<ModalShellProps> = ({ title, onClose, children, footer, widthClass = 'max-w-sm', isError }) => (
   <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
     <div className={`bg-white border-4 border-black w-full ${widthClass} p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]`} onClick={e => e.stopPropagation()}>
@@ -23,6 +49,22 @@ const ModalShell: React.FC<ModalShellProps> = ({ title, onClose, children, foote
   </div>
 );
 
+/**
+ * 【文件夹树节点组件】
+ * 
+ * 用于 MoveModal 中递归渲染文件夹树结构
+ * 
+ * @param folder - 当前文件夹数据（包含子文件夹）
+ * @param level - 树的嵌套层级（用于控制左侧缩进）
+ * @param selectedId - 当前选中的文件夹 ID
+ * @param onSelect - 选择文件夹的回调函数
+ * 
+ * 特性：
+ * - 支持折叠/展开（有子文件夹时显示 chevron 按钮）
+ * - 根据层级动态计算左侧缩进
+ * - 选中时高亮显示黄色背景
+ * - 递归渲染子文件夹
+ */
 const TreeItem: React.FC<{ folder: FolderTreeItem, level: number, selectedId: string | null, onSelect: (id: string | null) => void }> = ({ folder, level, selectedId, onSelect }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = folder.children && folder.children.length > 0;
@@ -52,6 +94,15 @@ const TreeItem: React.FC<{ folder: FolderTreeItem, level: number, selectedId: st
   );
 };
 
+/**
+ * 【新建文件夹模态框】
+ * 
+ * @param onClose - 关闭回调
+ * @param onConfirm - 确认创建回调（传入文件夹名称）
+ * 
+ * 用户输入：文件夹名称
+ * 支持 Enter 键快速确认
+ */
 export const NewFolderModal: React.FC<{ onClose: () => void, onConfirm: (name: string) => void }> = ({ onClose, onConfirm }) => {
   const [name, setName] = useState('');
   return (
@@ -66,6 +117,16 @@ export const NewFolderModal: React.FC<{ onClose: () => void, onConfirm: (name: s
   );
 };
 
+/**
+ * 【重命名模态框】
+ * 
+ * @param item - 要重命名的文件/文件夹项
+ * @param onClose - 关闭回调
+ * @param onConfirm - 确认重命名回调（传入新名称）
+ * 
+ * 输入框默认值为项目的当前名称
+ * 支持 Enter 键快速确认
+ */
 export const RenameModal: React.FC<{ item: DriveItem, onClose: () => void, onConfirm: (name: string) => void }> = ({ item, onClose, onConfirm }) => {
   const [name, setName] = useState(item.name);
   return (
@@ -80,6 +141,17 @@ export const RenameModal: React.FC<{ item: DriveItem, onClose: () => void, onCon
   );
 };
 
+/**
+ * 【密码输入模态框】
+ * 
+ * @param folderName - 加密文件夹的名称
+ * @param onClose - 关闭回调
+ * @param onConfirm - 确认密码回调（传入用户输入的密码）
+ * 
+ * 用于访问设置了密码的文件夹
+ * 输入框类型为 password，密码字符显示为点
+ * 支持 Enter 键快速提交
+ */
 export const PasswordModal: React.FC<{ folderName: string, onClose: () => void, onConfirm: (password: string) => void }> = ({ folderName, onClose, onConfirm }) => {
   const [password, setPassword] = useState('');
   return (
@@ -95,14 +167,30 @@ export const PasswordModal: React.FC<{ folderName: string, onClose: () => void, 
   );
 };
 
+/**
+ * 删除模态框的 Props 接口
+ */
 interface DeleteModalProps {
-  title?: string;
-  count: number;
-  isPermanent?: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
+  title?: string;           // 模态框标题（可选，默认为 "Delete Items?"）
+  count: number;            // 要删除的项目数量
+  isPermanent?: boolean;    // 是否为永久删除（true: 永久删除, false: 移至回收站）
+  onClose: () => void;      // 关闭回调
+  onConfirm: () => void;    // 确认删除回调
 }
 
+/**
+ * 【删除确认模态框】
+ * 
+ * 用于两种删除场景：
+ * 1. 从文件视图删除 -> 移至回收站（isPermanent=false）
+ * 2. 从回收站删除 -> 永久删除（isPermanent=true）
+ * 
+ * 特性：
+ * - 红色警告样式（isError 标志位开启）
+ * - 显示删除项目数量
+ * - 提示文件夹删除将包含所有子内容
+ * - 永久删除时额外显示不可撤销警告
+ */
 export const DeleteModal: React.FC<DeleteModalProps> = ({ 
   title = "Delete Items?", 
   count, 
@@ -138,6 +226,26 @@ export const DeleteModal: React.FC<DeleteModalProps> = ({
   </ModalShell>
 );
 
+/**
+ * 【移动文件/文件夹模态框】
+ * 
+ * @param count - 要移动的项目数量
+ * @param onClose - 关闭回调
+ * @param onConfirm - 确认移动回调（传入目标文件夹 ID，null 代表根目录）
+ * 
+ * 功能流程：
+ * 1. 组件挂载时调用 fetchTree API 获取完整文件夹树
+ * 2. 显示加载动画直到数据加载完成
+ * 3. 渲染文件夹树供用户选择目标位置
+ * 4. 用户可选择根目录（selectedId=null）或任意文件夹
+ * 5. 确认后将选中的文件夹 ID 传递给父组件
+ * 
+ * 特性：
+ * - 递归渲染文件夹树（使用 TreeItem 组件）
+ * - 支持折叠/展开子文件夹
+ * - 选中的文件夹高亮显示
+ * - 最大高度 80（max-h-80），超出自动滚动
+ */
 export const MoveModal: React.FC<{ count: number, onClose: () => void, onConfirm: (id: string | null) => void }> = ({ count, onClose, onConfirm }) => {
   const [tree, setTree] = useState<FolderTreeItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
