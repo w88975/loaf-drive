@@ -13,6 +13,7 @@ export interface DriveItem {
   thumbnail?: string;
   url?: string;
   r2Key?: string;
+  previews?: string[];
 }
 
 export interface FolderTreeItem {
@@ -49,4 +50,5 @@ export interface ApiFileItem {
   updatedAt: string;
   mimeType?: string;
   r2Key?: string;
+  previews?: string[];
 }

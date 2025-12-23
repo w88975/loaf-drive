@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { DriveItem } from '../types';
 import { driveApi } from '../api/drive';
+import { CONFIG } from '../config';
 
 export const useDrive = (currentFolderId: string | null, searchQuery: string) => {
   const [items, setItems] = useState<DriveItem[]>([]);
@@ -15,9 +16,10 @@ export const useDrive = (currentFolderId: string | null, searchQuery: string) =>
     size: apiItem.size,
     extension: (apiItem.filename || apiItem.name)?.split('.').pop(),
     modifiedAt: new Date(apiItem.updatedAt || apiItem.createdAt).getTime(),
-    url: apiItem.type !== 'FOLDER' ? `https://loaf-store.cnzoe.com/${apiItem.r2Key}` : undefined,
+    url: apiItem.type !== 'FOLDER' ? `${CONFIG.STATIC_HOST}/${apiItem.r2Key}` : undefined,
     mimeType: apiItem.mimeType,
-    r2Key: apiItem.r2Key
+    r2Key: apiItem.r2Key,
+    previews: apiItem.previews?.map((p: string) => p.startsWith('http') ? p : `${CONFIG.STATIC_HOST}/${p}`)
   });
 
   const refresh = useCallback(async () => {

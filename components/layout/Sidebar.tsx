@@ -2,6 +2,7 @@
 import React from 'react';
 import { NavLink } from 'https://esm.sh/react-router-dom@6';
 import { Icons } from '../../constants';
+import { CONFIG } from '../../config';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -10,6 +11,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectRoot }) => {
+  const hostName = new URL(CONFIG.API_HOST).hostname;
+
   const SidebarItem: React.FC<{ icon: React.ReactNode, label: string, to: string, onClick?: () => void }> = ({ icon, label, to, onClick }) => (
     <NavLink 
       to={to}
@@ -47,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectRoot 
             <span className="text-xs uppercase font-bold">Cloud Nodes</span>
             <span className="text-[10px] text-gray-500">Live API</span>
           </div>
-          <div className="text-[9px] text-gray-400 uppercase leading-tight">Connected to loaf.cnzoe.com<br/>Secure storage protocol v1</div>
+          <div className="text-[9px] text-gray-400 uppercase leading-tight">Connected to {hostName}<br/>Secure storage protocol v1</div>
         </div>
       </aside>
     </>

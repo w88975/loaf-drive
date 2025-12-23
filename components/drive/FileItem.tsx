@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { DriveItem } from '../../types';
 import { Icons } from '../../constants';
 import { formatSize, getFileIcon, formatDate } from '../../utils';
@@ -50,7 +50,6 @@ export const FileItem: React.FC<FileItemProps> = ({
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // If it was a long press, the click event following mouseUp/touchEnd should be ignored for navigation
     if (!isLongPressActive.current) {
       onSelect();
     }
@@ -68,19 +67,36 @@ export const FileItem: React.FC<FileItemProps> = ({
   };
 
   if (viewMode === 'grid') {
+    const hasPreview = (iconType === 'image' && item.url) || (iconType === 'video' && item.previews && item.previews.length > 0);
+    const previewSrc = iconType === 'image' ? item.url : (item.previews ? item.previews[0] : null);
+
     return (
       <div 
         {...eventHandlers}
         className={`group relative aspect-square border-2 border-black flex flex-col items-center justify-between cursor-pointer transition-all overflow-hidden ${isSelected ? 'bg-yellow-200 ring-4 ring-black scale-[0.98]' : 'hover:bg-gray-50 active:scale-95'}`}
       >
         <div className="flex-1 flex items-center justify-center w-full relative">
-          {isFolder ? <Icons.Folder className="w-10 h-10" /> : (
-            iconType === 'image' && item.url ? (
-              <div className="absolute inset-0 p-1">
-                <img src={item.url} alt="" className="w-full h-full object-cover border border-black/5 pointer-events-none" />
-              </div>
-            ) : iconType === 'video' ? <Icons.Video className="w-10 h-10" /> : <Icons.File className="w-10 h-10" />
+          {isFolder ? (
+            <Icons.Folder className="w-10 h-10" />
+          ) : hasPreview && previewSrc ? (
+            <div className="absolute inset-0 p-1">
+              <img src={previewSrc} alt="" className="w-full h-full object-cover border border-black/5 pointer-events-none" />
+              {iconType === 'video' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black/40 backdrop-blur-sm rounded-full p-1 border border-white/30">
+                    <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : iconType === 'video' ? (
+            <Icons.Video className="w-10 h-10" />
+          ) : (
+            <Icons.File className="w-10 h-10" />
           )}
+          
           {isSelected && (
             <div className="absolute top-2 left-2 z-20">
               <div className="w-5 h-5 bg-black border-2 border-white flex items-center justify-center">
@@ -107,13 +123,12 @@ export const FileItem: React.FC<FileItemProps> = ({
           type="checkbox" 
           className="w-4 h-4 accent-black cursor-pointer border-2 border-black"
           checked={isSelected}
-          onChange={(e) => { e.stopPropagation(); onSelect(); }}
-          onClick={(e) => e.stopPropagation()}
+          readOnly
         />
       </td>
       <td className="p-3 flex items-center space-x-3 border-r-2 border-black font-bold uppercase truncate align-middle">
         <div className="flex-shrink-0">
-          {isFolder ? <Icons.Folder className="w-4 h-4" /> : <Icons.File className="w-4 h-4" />}
+          {isFolder ? <Icons.Folder className="w-4 h-4" /> : iconType === 'video' ? <Icons.Video className="w-4 h-4" /> : iconType === 'image' ? <Icons.Image className="w-4 h-4" /> : <Icons.File className="w-4 h-4" />}
         </div>
         <span className="truncate">{item.name}</span>
       </td>

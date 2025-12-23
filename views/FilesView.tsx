@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Icons } from '../constants';
 import { DriveItem, SortKey, SortOrder } from '../types';
 import { useFiles, useDriveMutations } from '../hooks/useDriveQueries';
@@ -58,6 +58,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
     if (!selectedIds.has(item.id)) setSelectedIds(new Set([item.id]));
     setContextMenu({ x: e.pageX, y: e.pageY, item });
   };
+
+  // 全局点击监听，用于关闭右键菜单
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (contextMenu) setContextMenu(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [contextMenu]);
 
   return (
     <div className="flex flex-col h-full" onClick={() => selectedIds.size > 0 && setSelectedIds(new Set())}>

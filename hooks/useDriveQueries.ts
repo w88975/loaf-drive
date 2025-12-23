@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from 'https://esm.sh/@tanstack/react-query@5.66.0';
 import { driveApi } from '../api/drive';
 import { DriveItem } from '../types';
+import { CONFIG } from '../config';
 
 const mapApiItem = (apiItem: any): DriveItem => ({
   id: apiItem.id,
@@ -11,9 +12,10 @@ const mapApiItem = (apiItem: any): DriveItem => ({
   size: apiItem.size,
   extension: (apiItem.filename || apiItem.name)?.split('.').pop(),
   modifiedAt: new Date(apiItem.updatedAt || apiItem.createdAt).getTime(),
-  url: apiItem.type !== 'FOLDER' ? `https://loaf-store.cnzoe.com/${apiItem.r2Key}` : undefined,
+  url: apiItem.type !== 'FOLDER' ? `${CONFIG.STATIC_HOST}/${apiItem.r2Key}` : undefined,
   mimeType: apiItem.mimeType,
-  r2Key: apiItem.r2Key
+  r2Key: apiItem.r2Key,
+  previews: apiItem.previews?.map((p: string) => p.startsWith('http') ? p : `${CONFIG.STATIC_HOST}/${p}`)
 });
 
 export const useFiles = (folderId: string | null, search?: string) => {
@@ -56,7 +58,6 @@ export const useDriveMutations = () => {
   const deleteItems = useMutation({
     mutationFn: (ids: string[]) => Promise.all(ids.map(id => driveApi.deleteItem(id))),
     onSuccess: () => {
-      // 同时失效两个查询，因为删除操作会将文件移入回收站
       queryClient.invalidateQueries({ queryKey: ['files'] });
       queryClient.invalidateQueries({ queryKey: ['recycle-bin'] });
     },

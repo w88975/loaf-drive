@@ -1,7 +1,8 @@
 
 import { ApiResponse, ApiFileItem, FolderTreeItem } from '../types';
+import { CONFIG } from '../config';
 
-const API_HOST = 'https://loaf.cnzoe.com';
+const { API_HOST } = CONFIG;
 
 export const driveApi = {
   fetchFiles: async (folderId: string | null, search?: string) => {
