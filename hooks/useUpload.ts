@@ -1,12 +1,14 @@
 
 import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { UploadTask } from '../types';
 import { driveApi } from '../api/drive';
 import { generateId, getVideoFramesWeb, dataURItoBlob } from '../utils';
 
-export const useUpload = (refresh: () => void) => {
+export const useUpload = () => {
   const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
   const [showUploadPanel, setShowUploadPanel] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleUpload = useCallback(async (files: FileList | null, currentFolderId: string | null) => {
     if (!files) return;
@@ -71,7 +73,8 @@ export const useUpload = (refresh: () => void) => {
             const result = JSON.parse(xhr.responseText);
             if (result.code === 0) {
               setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'completed', progress: 100 } : t));
-              refresh();
+              // 全局使文件查询失效，这会触发所有 FilesView 实例自动重新获取数据
+              queryClient.invalidateQueries({ queryKey: ['files'] });
             } else {
               setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'error' } : t));
             }
@@ -89,7 +92,7 @@ export const useUpload = (refresh: () => void) => {
         setUploadTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'error' } : t));
       }
     }
-  }, [refresh]);
+  }, [queryClient]);
 
   const cancelUpload = (id: string) => {
     setUploadTasks(prev => {

@@ -3,7 +3,6 @@ import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Icons } from './constants';
 import { DriveItem } from './types';
-import { useFiles } from './hooks/useDriveQueries';
 import { useUpload } from './hooks/useUpload';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -21,8 +20,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState<DriveItem | null>(null);
 
-  const { refetch: refetchFiles } = useFiles(currentFolderId, searchQuery);
-  const { uploadTasks, showUploadPanel, setShowUploadPanel, handleUpload, cancelUpload, clearHistory } = useUpload(refetchFiles);
+  const { uploadTasks, showUploadPanel, setShowUploadPanel, handleUpload, cancelUpload, clearHistory } = useUpload();
 
   // Drag & Drop
   const [isDragging, setIsDragging] = useState(false);
@@ -83,7 +81,7 @@ const App: React.FC = () => {
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          uploadingCount={uploadTasks.filter(t => t.status === 'uploading').length}
+          uploadingCount={uploadTasks.filter(t => t.status === 'uploading' || t.status === 'processing').length}
           overallProgress={overallProgress}
           onToggleUploadPanel={() => setShowUploadPanel(!showUploadPanel)}
         />

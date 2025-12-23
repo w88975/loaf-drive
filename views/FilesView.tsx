@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Icons } from '../constants';
 import { DriveItem, SortKey, SortOrder } from '../types';
@@ -27,6 +28,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, item: DriveItem } | null>(null);
+  const [containerContextMenu, setContainerContextMenu] = useState<{ x: number, y: number } | null>(null);
   const [activeModal, setActiveModal] = useState<'new-folder' | 'rename' | 'delete' | 'move' | 'password-enter' | 'password-unlock' | null>(null);
   const [targetItem, setTargetItem] = useState<DriveItem | null>(null);
 
@@ -67,7 +69,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
   // 当前激活的密码（用于 React Query 依赖）
   const [folderPassword, setFolderPassword] = useState<string | undefined>(getCachedPassword(currentFolderId));
 
-  const { data: items = [], isLoading, error } = useFiles(currentFolderId, searchQuery, folderPassword);
+  const { data: items = [], isLoading, error, refetch } = useFiles(currentFolderId, searchQuery, folderPassword);
   const { createFolder, renameItem, toggleLock, deleteItems, moveItems } = useDriveMutations();
 
   // 监听文件夹切换，同步缓存密码
@@ -108,8 +110,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
   const handleContextMenu = (e: React.MouseEvent, item: DriveItem) => {
     e.preventDefault();
+    setContainerContextMenu(null); // 关闭容器菜单
     if (!selectedIds.has(item.id)) setSelectedIds(new Set([item.id]));
     setContextMenu({ x: e.pageX, y: e.pageY, item });
+  };
+
+  const handleContainerContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu(null); // 关闭项菜单
+    setContainerContextMenu({ x: e.pageX, y: e.pageY });
   };
 
   const handleNavigate = (item: DriveItem) => {
@@ -155,10 +164,11 @@ export const FilesView: React.FC<FilesViewProps> = ({
   useEffect(() => {
     const handleGlobalClick = () => {
       if (contextMenu) setContextMenu(null);
+      if (containerContextMenu) setContainerContextMenu(null);
     };
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
-  }, [contextMenu]);
+  }, [contextMenu, containerContextMenu]);
 
   return (
     <div className="flex flex-col h-full" onClick={() => selectedIds.size > 0 && setSelectedIds(new Set())}>
@@ -169,7 +179,10 @@ export const FilesView: React.FC<FilesViewProps> = ({
         <NewFolderAction onClick={() => setActiveModal('new-folder')} />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div 
+        className="flex-1 overflow-y-auto p-4 md:p-6"
+        onContextMenu={handleContainerContextMenu}
+      >
         {isLoading ? (
           <div className="h-full flex items-center justify-center"><Icons.Grid className="w-10 h-10 animate-spin" /></div>
         ) : error ? (
@@ -246,6 +259,32 @@ export const FilesView: React.FC<FilesViewProps> = ({
           }}
           onDelete={() => { setTargetItem(contextMenu.item); setActiveModal('delete'); setContextMenu(null); }}
         />
+      )}
+
+      {containerContextMenu && (
+        <div 
+          className="fixed z-[140] w-48 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-1 animate-in fade-in zoom-in-95 duration-100" 
+          style={{ top: containerContextMenu.y, left: containerContextMenu.x }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="px-4 py-1 border-b border-black/10 mb-1">
+            <p className="text-[8px] text-gray-400 font-black uppercase">Directory Options</p>
+          </div>
+          <button 
+            onClick={() => { setActiveModal('new-folder'); setContainerContextMenu(null); }} 
+            className="w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-yellow-400 transition-colors flex items-center justify-between group"
+          >
+            <span>New Folder</span>
+            <span className="text-[10px]">📁+</span>
+          </button>
+          <button 
+            onClick={() => { refetch(); setContainerContextMenu(null); }} 
+            className="w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-yellow-400 transition-colors border-t border-black/5 flex items-center justify-between group"
+          >
+            <span>Refresh</span>
+            <span className="text-[10px]">🔄</span>
+          </button>
+        </div>
       )}
 
       {selectedIds.size > 0 && <SelectionBar count={selectedIds.size} onMove={() => setActiveModal('move')} onDelete={() => setActiveModal('delete')} onClear={() => setSelectedIds(new Set())} />}

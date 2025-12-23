@@ -56,6 +56,11 @@ export const FileItem: React.FC<FileItemProps> = ({
     isLongPressActive.current = false;
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.stopPropagation(); // 阻止冒泡到容器
+    onContextMenu(e);
+  };
+
   const eventHandlers = {
     onMouseDown: startPress,
     onMouseUp: endPress,
@@ -63,7 +68,7 @@ export const FileItem: React.FC<FileItemProps> = ({
     onTouchStart: startPress,
     onTouchEnd: endPress,
     onClick: handleClick,
-    onContextMenu: onContextMenu
+    onContextMenu: handleContextMenu
   };
 
   if (viewMode === 'grid') {
