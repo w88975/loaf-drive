@@ -273,9 +273,9 @@ const App: React.FC = () => {
           x={contextMenu.x} 
           y={contextMenu.y} 
           item={contextMenu.item}
-          onRename={() => { setTargetItem(contextMenu.item); setActiveModal('rename'); }}
-          onMove={() => { setActiveModal('move'); }}
-          onDelete={() => { setTargetItem(contextMenu.item); setActiveModal(activeTab === 'trash' ? 'delete-permanent' : 'delete'); }}
+          onRename={() => { setTargetItem(contextMenu.item); setActiveModal('rename'); setContextMenu(null); }}
+          onMove={() => { setActiveModal('move'); setContextMenu(null); }}
+          onDelete={() => { setTargetItem(contextMenu.item); setActiveModal(activeTab === 'trash' ? 'delete-permanent' : 'delete'); setContextMenu(null); }}
         />
       )}
     </div>
