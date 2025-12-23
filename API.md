@@ -11,9 +11,22 @@
 - **文件夹管理**: 支持创建虚拟文件夹 (模拟文件系统结构)
 - **文件夹加锁**: 支持对文件夹进行加锁保护，访问加锁文件夹需要提供密码
 - **文件检索**: 支持按文件夹、文件名搜索、文件类型筛选
-- **文件删除**: 支持软删除
-- **回收站**: 支持查看回收站、永久删除文件
+- **文件删除**: 
+  - 软删除（移入回收站）
+  - 递归删除（删除文件夹时自动删除所有子项）
+  - 防止幽灵文件
+- **回收站**: 
+  - 查看已删除的文件
+  - 永久删除（彻底清理数据库和 R2 存储）
+  - 递归清理（删除文件夹时清理所有子项）
 - **文件预览**: 获取文件下载/预览链接
+- **分享功能**:
+  - 生成分享链接（10位分享码）
+  - 支持密码保护
+  - 支持过期时间
+  - 支持访问次数限制
+  - 文件/文件夹分享
+  - 独立的分享访问接口
 
 ## 技术栈
 
@@ -465,6 +478,253 @@ curl -X POST "http://localhost:8787/api/files/upload/abort" \
   - 最佳实践和性能优化
   - 错误处理和断点续传
   - 故障排查指南
+
+📖 **递归删除功能说明**: 参考 [RECURSIVE-DELETE-GUIDE.md](./RECURSIVE-DELETE-GUIDE.md)
+  - 递归删除的工作原理
+  - 防止幽灵文件的机制
+  - 性能优化和批量处理
+  - 前端集成示例
+  - 测试和最佳实践
+
+## 分享功能
+
+### 创建分享
+`POST /api/shares`
+
+Body (JSON):
+- `fileId`: 文件或文件夹ID (必填)
+- `password`: 访问密码 (可选)
+- `expiresAt`: 过期时间 ISO 8601 格式 (可选)
+- `maxViews`: 最大访问次数 (可选)
+
+**示例:**
+```bash
+# 创建无密码分享
+curl -X POST "http://localhost:8787/api/shares" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fileId": "file-uuid",
+    "expiresAt": "2024-12-31T23:59:59Z"
+  }'
+
+# 创建带密码的分享
+curl -X POST "http://localhost:8787/api/shares" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fileId": "folder-uuid",
+    "password": "123456",
+    "maxViews": 100
+  }'
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "share-uuid",
+    "code": "AbCd123456",
+    "fileId": "file-uuid",
+    "hasPassword": true,
+    "expiresAt": "2024-12-31T23:59:59Z",
+    "maxViews": 100,
+    "shareUrl": "/share/AbCd123456"
+  }
+}
+```
+
+### 获取分享信息
+`GET /api/shares/:code`
+
+获取分享的基本信息，不需要密码。
+
+**示例:**
+```bash
+curl "http://localhost:8787/api/shares/AbCd123456"
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "code": "AbCd123456",
+    "hasPassword": true,
+    "expiresAt": "2024-12-31T23:59:59Z",
+    "views": 5,
+    "maxViews": 100,
+    "file": {
+      "id": "file-uuid",
+      "filename": "document.pdf",
+      "type": "DOCUMENT",
+      "size": 1024000
+    }
+  }
+}
+```
+
+### 验证分享密码
+`POST /api/shares/:code/verify`
+
+验证分享密码，成功后设置 cookie。
+
+Body (JSON):
+- `password`: 密码 (必填)
+
+**示例:**
+```bash
+curl -X POST "http://localhost:8787/api/shares/AbCd123456/verify" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "123456"}'
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "message": "Password verified",
+    "token": "token-uuid"
+  }
+}
+```
+
+返回的 Cookie: `share_token=AbCd123456:token-uuid`
+
+### 获取分享的文件列表
+`GET /api/shares/:code/files`
+
+获取分享的文件内容。如果是文件夹，返回文件列表；如果是文件，返回文件信息。
+
+参数:
+- `subFolderId`: 子文件夹ID (可选，用于浏览文件夹内容)
+- `page`: 页码 (默认 1)
+- `limit`: 每页数量 (默认 50)
+
+Headers:
+- `Cookie`: 如果分享有密码，需要携带验证后的 cookie
+
+**示例:**
+```bash
+# 获取分享内容（无密码）
+curl "http://localhost:8787/api/shares/AbCd123456/files"
+
+# 获取分享内容（有密码，需要 cookie）
+curl "http://localhost:8787/api/shares/AbCd123456/files" \
+  -H "Cookie: share_token=AbCd123456:token-uuid"
+
+# 浏览子文件夹
+curl "http://localhost:8787/api/shares/AbCd123456/files?subFolderId=subfolder-uuid"
+```
+
+**响应（文件夹）:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "folder": {
+      "id": "folder-uuid",
+      "filename": "My Folder",
+      "type": "FOLDER"
+    },
+    "items": [
+      {
+        "id": "file1-uuid",
+        "filename": "image.jpg",
+        "type": "IMAGE",
+        "size": 2048000
+      }
+    ],
+    "isFolder": true,
+    "pagination": {
+      "page": 1,
+      "limit": 50,
+      "total": 10,
+      "totalPages": 1
+    }
+  }
+}
+```
+
+**响应（单个文件）:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "file": {
+      "id": "file-uuid",
+      "filename": "document.pdf",
+      "type": "DOCUMENT",
+      "size": 1024000
+    },
+    "isFolder": false
+  }
+}
+```
+
+### 下载分享的文件
+`GET /api/shares/:code/download/:fileId`
+
+下载分享的文件。
+
+Headers:
+- `Cookie`: 如果分享有密码，需要携带验证后的 cookie
+
+**示例:**
+```bash
+# 下载文件（无密码）
+curl "http://localhost:8787/api/shares/AbCd123456/download/file-uuid" --output file.pdf
+
+# 下载文件（有密码）
+curl "http://localhost:8787/api/shares/AbCd123456/download/file-uuid" \
+  -H "Cookie: share_token=AbCd123456:token-uuid" \
+  --output file.pdf
+```
+
+### 删除分享
+`DELETE /api/shares/:code`
+
+删除一个分享链接。
+
+**示例:**
+```bash
+curl -X DELETE "http://localhost:8787/api/shares/AbCd123456"
+```
+
+### 获取文件的所有分享
+`GET /api/files/:id/shares`
+
+获取某个文件或文件夹的所有分享链接。
+
+**示例:**
+```bash
+curl "http://localhost:8787/api/files/file-uuid/shares"
+```
+
+**响应:**
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "share1-uuid",
+      "code": "AbCd123456",
+      "hasPassword": true,
+      "expiresAt": "2024-12-31T23:59:59Z",
+      "views": 5,
+      "maxViews": 100,
+      "createdAt": "2024-01-01T00:00:00Z",
+      "shareUrl": "/share/AbCd123456"
+    }
+  ]
+}
+```
 
 ### 6. 更新文件信息
 `PATCH /api/files/:id`

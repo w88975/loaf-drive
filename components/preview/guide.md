@@ -9,7 +9,6 @@ components/preview/
 ├── VideoViewer.tsx         # 视频播放器
 ├── AudioViewer.tsx         # 音频播放器
 ├── TextViewer.tsx          # 代码/文本查看器
-├── PdfViewer.tsx           # PDF文档查看器
 └── UnsupportedViewer.tsx   # 不支持格式的兜底组件
 ```
 
@@ -71,9 +70,9 @@ const PreviewContent: React.FC<PreviewContentProps> = ({ item }) => {
     return <TextViewer item={item} />;
   }
   
-  // 5. PDF文档
+  // 5. PDF（未来可扩展）
   if (mimeType === 'application/pdf' || extension === 'pdf') {
-    return <PdfViewer item={item} />;
+    return <TextViewer item={item} forceText />;  // 暂时用文本查看器
   }
   
   // 6. 不支持的格式
@@ -387,72 +386,6 @@ const language = languageMap[item.extension] || item.extension;
 
 ---
 
-### PdfViewer.tsx - PDF文档查看器
-
-#### 功能特性
-- 使用浏览器内置PDF查看器
-- iframe方式嵌入显示
-- 自动缩放适配容器
-- 提供下载按钮
-- 支持所有主流浏览器
-
-#### Props 接口
-```typescript
-interface PdfViewerProps {
-  item: DriveItem
-}
-```
-
-#### 实现要点
-```typescript
-const PdfViewer: React.FC<PdfViewerProps> = ({ item }) => {
-  return (
-    <div className="flex flex-col items-center justify-center h-full w-full relative">
-      {/* 使用iframe嵌入PDF */}
-      <iframe 
-        src={item.url}
-        title={item.name}
-        className="w-full h-full border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
-      />
-      
-      {/* 底部下载按钮 */}
-      <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent pointer-events-none">
-        <div className="flex justify-center pointer-events-auto">
-          <a 
-            href={item.url} 
-            download 
-            className="px-4 py-2 bg-yellow-400 text-black font-bold uppercase border-4 border-black hover:bg-white transition-all text-xs flex items-center space-x-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-          >
-            <Icons.Download className="w-4 h-4" />
-            <span>Download PDF</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-};
-```
-
-#### 浏览器支持
-- **Chrome/Edge**：完整的PDF查看器支持
-- **Firefox**：内置PDF.js查看器
-- **Safari**：原生PDF预览
-- **移动浏览器**：大部分支持iframe PDF显示
-
-#### 设计要点
-- **iframe方式**：利用浏览器原生PDF能力，无需额外库
-- **简洁高效**：不增加包体积
-- **下载兜底**：渐变遮罩层中提供下载按钮
-- **极客风格**：保持黑色粗边框和硬核阴影
-
-#### 优势
-- 零依赖：不需要引入pdf.js等第三方库
-- 性能优异：浏览器原生渲染
-- 功能完整：自带缩放、翻页、搜索等功能
-- 兼容性好：所有现代浏览器都支持
-
----
-
 ### UnsupportedViewer.tsx - 兜底查看器
 
 #### 功能特性
@@ -531,14 +464,16 @@ const UnsupportedViewer: React.FC<UnsupportedViewerProps> = ({ item }) => {
   ↓
 PreviewContent 分发器
   ↓
-检查文件类型（根据扩展名）
-  ├─ image     → ImageViewer
-  ├─ video     → VideoViewer
-  ├─ audio     → AudioViewer
-  ├─ text      → TextViewer
-  ├─ pdf       → PdfViewer
-  ├─ archive   → UnsupportedViewer (提供下载)
-  └─ other     → UnsupportedViewer (尝试文本查看)
+检查 MIME 类型
+  ├─ image/* → ImageViewer
+  ├─ video/* → VideoViewer
+  ├─ audio/* → AudioViewer
+  ├─ text/*  → TextViewer
+  └─ 其他
+       ↓
+    检查扩展名
+      ├─ 已知扩展 → 对应 Viewer
+      └─ 未知扩展 → UnsupportedViewer
 ```
 
 ---
@@ -599,10 +534,10 @@ PreviewContent 分发器
 4. 测试预览效果
 
 ### 集成第三方库
-- **PDF 预览**：已支持（使用浏览器原生能力）
-- **Office 文档**：Office Online Viewer API（待扩展）
-- **3D 模型**：Three.js（待扩展）
-- **Markdown**：marked + highlight.js（可通过TextViewer实现）
+- **PDF 预览**：pdf.js
+- **Office 文档**：Office Online Viewer API
+- **3D 模型**：Three.js
+- **Markdown**：marked + highlight.js
 
 ---
 
