@@ -14,12 +14,20 @@ import { useCreateShare } from '../../hooks/useDriveQueries';
 interface PreviewModalProps {
   item: DriveItem;
   onClose: () => void;
+  isReadOnly?: boolean;
+  onDownload?: (fileId: string, filename: string) => void;
 }
 
-export const PreviewModal: React.FC<PreviewModalProps> = ({ item, onClose }) => {
+export const PreviewModal: React.FC<PreviewModalProps> = ({ item, onClose, isReadOnly = false, onDownload }) => {
   const [showShare, setShowShare] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const createShare = useCreateShare();
+
+  const handleDownload = () => {
+    if (onDownload) {
+      onDownload(item.id, item.name);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
@@ -27,13 +35,20 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({ item, onClose }) => 
         <div className="p-4 border-b-2 border-black flex items-center justify-between bg-yellow-400">
           <h2 className="font-bold uppercase tracking-tight truncate flex-1 mr-4 italic text-sm md:text-base">{item.name}</h2>
           <div className="flex items-center space-x-2 md:space-x-4">
-            {/* 新增分享按钮 */}
-            <button onClick={() => setShowShare(true)} className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors" title="SHARE">
-              <Icons.Search className="w-5 h-5 rotate-45" />
-            </button>
-            <a href={item.url} download className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors">
-              <Icons.Download className="w-5 h-5" />
-            </a>
+            {!isReadOnly && (
+              <button onClick={() => setShowShare(true)} className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors" title="SHARE">
+                <Icons.Search className="w-5 h-5 rotate-45" />
+              </button>
+            )}
+            {onDownload ? (
+              <button onClick={handleDownload} className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors">
+                <Icons.Download className="w-5 h-5" />
+              </button>
+            ) : (
+              <a href={item.url} download className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors">
+                <Icons.Download className="w-5 h-5" />
+              </a>
+            )}
             <button onClick={onClose} className="p-2 bg-black text-white hover:bg-red-500 border-2 border-black transition-colors">
               <Icons.Close className="w-5 h-5" />
             </button>
@@ -51,8 +66,8 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({ item, onClose }) => 
         </div>
       </div>
 
-      {showShare && <ShareModal item={item} onClose={() => setShowShare(false)} onConfirm={(data) => createShare.mutate(data, { onSuccess: (res) => { setShareCode(res.data.code); setShowShare(false); } })} />}
-      {shareCode && <ShareResultModal code={shareCode} onClose={() => setShareCode(null)} />}
+      {!isReadOnly && showShare && <ShareModal item={item} onClose={() => setShowShare(false)} onConfirm={(data) => createShare.mutate(data, { onSuccess: (res) => { setShareCode(res.data.code); setShowShare(false); } })} />}
+      {!isReadOnly && shareCode && <ShareResultModal code={shareCode} onClose={() => setShareCode(null)} />}
     </div>
   );
 };

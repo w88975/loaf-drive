@@ -305,10 +305,16 @@ const handleConfirm = () => {
 #### Props 接口
 ```typescript
 interface PreviewModalProps {
-  item: DriveItem             // 要预览的文件
-  onClose: () => void
+  item: DriveItem                                    // 要预览的文件
+  onClose: () => void                                // 关闭预览
+  isReadOnly?: boolean                               // 只读模式（隐藏分享按钮）
+  onDownload?: (fileId: string, filename: string) => void  // 自定义下载函数
 }
 ```
+
+**属性说明**：
+- `isReadOnly`: 设为 true 时，预览窗口进入只读模式，隐藏分享按钮。主要用于分享页面，避免二次分享
+- `onDownload`: 自定义下载处理函数。如果提供，将替代默认的 `<a>` 标签下载，允许在请求中添加认证 Header 等自定义逻辑
 
 #### 布局结构
 ```
@@ -334,14 +340,57 @@ PreviewModal (全屏)
       {formatSize(item.size)} • {formatDate(item.modifiedAt)}
     </p>
   </div>
-  <a 
-    href={item.url} 
-    download={item.name}
-    className="download-button"
-  >
-    <Icons.Download />
-  </a>
+  <div className="actions">
+    {/* 分享按钮 - 只读模式下隐藏 */}
+    {!isReadOnly && (
+      <button onClick={() => setShowShare(true)}>
+        <Icons.Search className="rotate-45" />
+      </button>
+    )}
+    {/* 下载按钮 - 支持自定义下载 */}
+    {onDownload ? (
+      <button onClick={() => onDownload(item.id, item.name)}>
+        <Icons.Download />
+      </button>
+    ) : (
+      <a href={item.url} download={item.name}>
+        <Icons.Download />
+      </a>
+    )}
+  </div>
 </Header>
+```
+
+**使用示例**：
+
+普通预览（支持分享）：
+```typescript
+<PreviewModal 
+  item={fileItem} 
+  onClose={() => setPreviewItem(null)} 
+/>
+```
+
+只读预览（分享页面）：
+```typescript
+<PreviewModal 
+  item={fileItem} 
+  onClose={() => setPreviewItem(null)}
+  isReadOnly={true}
+  onDownload={(fileId, filename) => {
+    // 自定义下载逻辑，支持 Header 认证
+    fetch(`/api/shares/${code}/download/${fileId}`, {
+      headers: { 'x-share-token': token }
+    }).then(response => response.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+      });
+  }}
+/>
 ```
 
 **键盘支持**：

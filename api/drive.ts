@@ -11,13 +11,7 @@ const { API_HOST } = CONFIG;
 
 async function apiFetch<T>(url: string, options: RequestInit = {}, retries = 2): Promise<ApiResponse<T>> {
   try {
-    // 增加 credentials: 'include' 以支持跨域 Cookie (分享验证所必需)
-    const fetchOptions: RequestInit = {
-      ...options,
-      credentials: 'include',
-    };
-    
-    const response = await fetch(url, fetchOptions);
+    const response = await fetch(url, options);
     
     if (!response.ok && retries > 0 && response.status >= 500) {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -162,16 +156,22 @@ export const driveApi = {
   },
 
   verifySharePassword: async (code: string, password: string) => {
-    return apiFetch<{ token: string }>(`${API_HOST}/api/shares/${code}/verify`, {
+    return apiFetch<{ message: string, accessToken: string }>(`${API_HOST}/api/shares/${code}/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
     });
   },
 
-  getShareFiles: async (code: string, subFolderId?: string) => {
+  getShareFiles: async (code: string, subFolderId?: string, token?: string) => {
     let url = `${API_HOST}/api/shares/${code}/files`;
     if (subFolderId) url += `?subFolderId=${subFolderId}`;
-    return apiFetch<ShareContentResponse>(url);
+    
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['x-share-token'] = token;
+    }
+    
+    return apiFetch<ShareContentResponse>(url, { headers });
   }
 };

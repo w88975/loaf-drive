@@ -122,11 +122,11 @@ export const useShareInfo = (code: string) => {
   });
 };
 
-export const useShareFiles = (code: string, subFolderId?: string) => {
+export const useShareFiles = (code: string, subFolderId?: string, token?: string) => {
   return useQuery({
-    queryKey: ['share-files', code, subFolderId],
+    queryKey: ['share-files', code, subFolderId, token],
     queryFn: async () => {
-      const result = await driveApi.getShareFiles(code, subFolderId);
+      const result = await driveApi.getShareFiles(code, subFolderId, token);
       if (result.code !== 0) {
         const err = new Error(result.message);
         (err as any).code = result.code;

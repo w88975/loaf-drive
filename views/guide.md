@@ -5,6 +5,7 @@
 ```
 views/
 ├── FilesView.tsx       # 文件浏览主视图
+├── ShareView.tsx       # 分享页视图
 └── TrashView.tsx       # 回收站视图
 ```
 
@@ -163,6 +164,183 @@ FilesView
 
 ---
 
+### ShareView.tsx - 分享页视图
+
+#### 功能概述
+公开分享页面，用于外部用户访问分享的文件或文件夹。这是一个独立的页面，不需要登录即可访问。
+
+#### 核心特性
+1. **密码保护**
+   - 支持带密码的分享
+   - 密码验证后获取访问令牌
+   - 令牌通过 Header `x-share-token` 传递
+
+2. **文件夹浏览**
+   - 支持浏览分享文件夹的子文件夹
+   - 面包屑导航
+   - 双视图模式（网格/列表）
+
+3. **只读预览**
+   - 支持文件预览
+   - 预览窗口不支持分享（避免二次分享）
+   - 下载文件时自动携带访问令牌
+
+4. **访问统计**
+   - 显示浏览次数
+   - 分享信息展示
+
+#### 状态管理
+
+**UI 状态**：
+- `viewMode`: 视图模式（grid/list）
+- `subFolderId`: 当前浏览的子文件夹 ID
+- `previewItem`: 预览的文件
+- `sortKey` / `sortOrder`: 排序字段和方向
+- `navigationStack`: 文件夹导航历史
+- `showManualPassword`: 是否显示密码输入框
+- `accessToken`: 访问令牌（密码验证后获取）
+- `isVerifying`: 密码验证中
+- `isDownloading`: 文件下载中
+
+**服务端状态**：
+- 通过 `useShareInfo(code)` 获取分享基础信息
+- 通过 `useShareFiles(code, subFolderId, accessToken)` 获取文件列表
+
+#### 关键逻辑
+
+**密码验证流程**：
+```typescript
+handlePasswordConfirm(password: string) {
+  // 1. 调用验证接口
+  const res = await driveApi.verifySharePassword(code, password);
+  
+  // 2. 保存访问令牌
+  if (res.code === 0 && res.data.accessToken) {
+    setAccessToken(res.data.accessToken);
+    
+    // 3. 重新获取文件列表（带令牌）
+    await refetch();
+  }
+}
+```
+
+**文件下载流程**（带认证）：
+```typescript
+handleDownload(fileId: string, filename: string) {
+  // 使用自定义下载函数，携带访问令牌
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers['x-share-token'] = accessToken;
+  }
+  
+  // 调用分享下载接口
+  const response = await fetch(
+    `${API_HOST}/api/shares/${code}/download/${fileId}`, 
+    { headers }
+  );
+  
+  // Blob 下载
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+}
+```
+
+**只读预览**：
+```typescript
+{previewItem && (
+  <PreviewModal 
+    item={previewItem} 
+    onClose={() => setPreviewItem(null)}
+    isReadOnly={true}              // 隐藏分享按钮
+    onDownload={handleDownload}    // 自定义下载（携带令牌）
+  />
+)}
+```
+
+#### 异常处理
+
+**403 错误（需要密码）**：
+```typescript
+const needsPassword = (contentError as any)?.code === 403;
+
+// 自动弹出密码输入框
+if (needsPassword) {
+  return <PasswordModal onConfirm={handlePasswordConfirm} />;
+}
+```
+
+**分享链接失效**：
+- 链接过期
+- 达到最大访问次数
+- 源文件已删除
+
+显示友好的错误页面，提供返回首页链接。
+
+#### 组件树结构
+
+```
+ShareView
+├── Header（分享信息）
+│   ├── 文件/文件夹名称
+│   ├── 访问次数
+│   └── 视图切换按钮
+├── 导航面包屑（如果在子文件夹中）
+├── 主内容区域
+│   ├── 文件夹视图
+│   │   ├── GridView（网格视图）
+│   │   └── ListView（列表视图）
+│   ├── 单文件视图
+│   │   ├── 文件信息卡片
+│   │   ├── Preview 按钮
+│   │   └── Download 按钮
+│   └── 受限访问提示（需要密码）
+├── Footer（版权信息）
+└── 弹窗层
+    ├── PasswordModal（密码输入）
+    └── PreviewModal（只读预览）
+```
+
+#### 安全机制
+
+1. **令牌认证**
+   - 密码验证后获取 `accessToken`
+   - 后续请求通过 Header `x-share-token` 携带令牌
+   - 不使用 Cookie（避免 CORS 问题）
+
+2. **令牌生命周期**
+   - 令牌仅保存在组件状态中
+   - 刷新页面后需重新验证
+   - 避免令牌泄漏风险
+
+3. **API 隔离**
+   - 分享页使用独立的 API 端点（`/api/shares/:code/*`）
+   - 不能访问主应用的 API
+   - 权限严格限制在分享范围内
+
+#### 使用限制
+
+**不支持的功能**（只读模式）：
+- ❌ 上传文件
+- ❌ 创建文件夹
+- ❌ 删除文件
+- ❌ 重命名文件
+- ❌ 移动文件
+- ❌ 二次分享（预览窗口隐藏分享按钮）
+- ❌ 右键菜单
+
+**支持的功能**：
+- ✅ 浏览文件列表
+- ✅ 浏览子文件夹
+- ✅ 预览文件
+- ✅ 下载文件
+- ✅ 排序和切换视图
+
+---
+
 ### TrashView.tsx - 回收站视图
 
 #### 功能概述
@@ -266,18 +444,20 @@ TrashView
 
 ## 设计对比
 
-| 特性 | FilesView | TrashView |
-|------|-----------|-----------|
-| 文件夹导航 | ✅ | ❌ |
-| 加密支持 | ✅ | ❌ |
-| 预览文件 | ✅ | ❌ |
-| 重命名 | ✅ | ❌ |
-| 移动 | ✅ | ❌ |
-| 删除 | ✅（移入回收站） | ✅（永久删除） |
-| 右键菜单 | ✅ | ❌ |
-| 多选操作 | ✅ | ✅ |
-| 排序 | ✅ | ✅ |
-| 搜索 | ✅ | ✅ |
+| 特性 | FilesView | ShareView | TrashView |
+|------|-----------|-----------|-----------|
+| 文件夹导航 | ✅ | ✅ | ❌ |
+| 加密支持 | ✅ | ✅（密码验证） | ❌ |
+| 预览文件 | ✅ | ✅（只读） | ❌ |
+| 重命名 | ✅ | ❌ | ❌ |
+| 移动 | ✅ | ❌ | ❌ |
+| 删除 | ✅（移入回收站） | ❌ | ✅（永久删除） |
+| 右键菜单 | ✅ | ❌ | ❌ |
+| 多选操作 | ✅ | ❌ | ✅ |
+| 排序 | ✅ | ✅ | ✅ |
+| 搜索 | ✅ | ❌ | ✅ |
+| 上传 | ✅ | ❌ | ❌ |
+| 分享 | ✅ | ❌（只读） | ❌ |
 
 ## 最佳实践
 

@@ -127,7 +127,7 @@ export const ShareModal: React.FC<{ item: DriveItem, onClose: () => void, onConf
  * 分享结果展示模态框
  */
 export const ShareResultModal: React.FC<{ code: string, onClose: () => void }> = ({ code, onClose }) => {
-  const url = `${window.location.origin}/share/${code}`;
+  const url = `${window.location.origin}/#/share/${code}`;
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {

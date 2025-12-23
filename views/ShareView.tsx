@@ -33,12 +33,14 @@ export const ShareView: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [navigationStack, setNavigationStack] = useState<{id: string, name: string}[]>([]);
   const [showManualPassword, setShowManualPassword] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // 3. 数据查询：先获取分享的基础信息（判断是否有密码）
   const { data: shareInfo, isLoading: infoLoading, error: infoError } = useShareInfo(code || '');
   
   // 4. 数据查询：获取分享的内容（如果是文件夹则列出文件）
-  const { data: shareContent, isLoading: contentLoading, error: contentError, refetch } = useShareFiles(code || '', subFolderId);
+  const { data: shareContent, isLoading: contentLoading, error: contentError, refetch } = useShareFiles(code || '', subFolderId, accessToken);
 
   // 5. 处理进入子文件夹
   const handleNavigate = (item: DriveItem) => {
@@ -70,8 +72,8 @@ export const ShareView: React.FC = () => {
     setIsVerifying(true);
     try {
       const res = await driveApi.verifySharePassword(code, pwd);
-      if (res.code === 0) {
-        // 验证成功后，手动关闭密码框，并强制重新拉取数据
+      if (res.code === 0 && res.data.accessToken) {
+        setAccessToken(res.data.accessToken);
         setShowManualPassword(false);
         await refetch();
       } else {
@@ -84,7 +86,41 @@ export const ShareView: React.FC = () => {
     }
   };
 
-  // 8. 排序逻辑
+  // 8. 处理文件下载
+  const handleDownload = async (fileId: string, filename: string) => {
+    if (!code) return;
+    setIsDownloading(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (accessToken) {
+        headers['x-share-token'] = accessToken;
+      }
+      
+      const response = await fetch(`${CONFIG.API_HOST}/api/shares/${code}/download/${fileId}`, {
+        headers
+      });
+      
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert('Download failed');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // 9. 排序逻辑
   const sortedItems = useMemo(() => {
     const items = shareContent?.items || [];
     return [...items].map(mapApiItem).sort((a, b) => {
@@ -100,7 +136,7 @@ export const ShareView: React.FC = () => {
     });
   }, [shareContent, sortKey, sortOrder]);
 
-  // 9. 异常状态处理 (403 触发密码框)
+  // 10. 异常状态处理 (403 触发密码框)
   // 增加 showManualPassword 状态控制，避免 refetch 瞬间由于旧错误导致的闪烁
   const needsPassword = (contentError as any)?.code === 403 || showManualPassword;
 
@@ -234,13 +270,13 @@ export const ShareView: React.FC = () => {
               >
                 Preview
               </button>
-              <a 
-                href={`${CONFIG.API_HOST}/api/files/${shareContent.file.id}/content`} 
-                download 
-                className="flex-1 sm:px-12 py-3 border-4 border-black font-bold uppercase hover:bg-yellow-400 transition-all text-center"
+              <button 
+                onClick={() => handleDownload(shareContent.file.id, shareContent.file.filename)}
+                disabled={isDownloading}
+                className="flex-1 sm:px-12 py-3 border-4 border-black font-bold uppercase hover:bg-yellow-400 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Download
-              </a>
+                {isDownloading ? 'Downloading...' : 'Download'}
+              </button>
             </div>
           </div>
         ) : needsPassword ? (
@@ -271,7 +307,9 @@ export const ShareView: React.FC = () => {
       {previewItem && (
         <PreviewModal 
           item={previewItem} 
-          onClose={() => setPreviewItem(null)} 
+          onClose={() => setPreviewItem(null)}
+          isReadOnly={true}
+          onDownload={handleDownload}
         />
       )}
 

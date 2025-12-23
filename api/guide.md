@@ -118,6 +118,67 @@ async function apiFetch<T>(
 - **参数**：无
 - **警告**：不可逆操作，所有文件将被永久删除
 
+#### 分享功能
+
+**createShare()**
+- **功能**：创建文件/文件夹分享链接
+- **参数**：
+  ```typescript
+  {
+    fileId: string          // 文件或文件夹 ID
+    password?: string       // 访问密码（可选）
+    expiresAt?: string      // 过期时间 ISO 8601（可选）
+    maxViews?: number       // 最大访问次数（可选）
+  }
+  ```
+- **返回**：`{ code: string }` - 10位分享码
+- **使用场景**：从预览窗口或右键菜单创建分享
+
+**getShareInfo()**
+- **功能**：获取分享的基本信息
+- **参数**：
+  - `code`: 分享码
+- **返回**：分享信息（包含文件信息、是否有密码、访问次数等）
+- **注意**：不需要密码即可获取基本信息
+
+**verifySharePassword()**
+- **功能**：验证分享密码
+- **参数**：
+  - `code`: 分享码
+  - `password`: 密码
+- **返回**：`{ message: string, accessToken: string }`
+- **认证方式**：返回的 `accessToken` 用于后续请求，通过 Header `x-share-token` 传递
+- **注意**：不使用 Cookie，避免 CORS 问题
+
+**getShareFiles()**
+- **功能**：获取分享的文件内容
+- **参数**：
+  - `code`: 分享码
+  - `subFolderId`: 子文件夹 ID（可选，用于浏览文件夹内容）
+  - `token`: 访问令牌（可选，有密码保护时必填）
+- **特殊处理**：令牌通过 `x-share-token` 请求头传递
+- **返回**：
+  - 如果是文件夹：返回文件列表和分页信息
+  - 如果是文件：返回单个文件信息
+
+**实现示例**：
+```typescript
+// 1. 创建分享
+const shareRes = await driveApi.createShare({
+  fileId: 'xxx',
+  password: '123456',
+  maxViews: 100
+});
+const shareCode = shareRes.data.code;
+
+// 2. 验证密码并获取令牌
+const verifyRes = await driveApi.verifySharePassword(shareCode, '123456');
+const token = verifyRes.data.accessToken;
+
+// 3. 获取文件列表（携带令牌）
+const filesRes = await driveApi.getShareFiles(shareCode, undefined, token);
+```
+
 #### 文件上传
 
 **uploadPreview()**
@@ -227,7 +288,8 @@ try {
 
 ### API 约定
 - 文件夹 ID 为 null 时传递 'root' 字符串
-- 密码使用自定义请求头 `x-folder-password`
+- 加密文件夹密码使用请求头 `x-folder-password`
+- 分享访问令牌使用请求头 `x-share-token`
 - 所有响应都包含 `code`、`message`、`data` 三个字段
 
 ### 性能考虑
@@ -239,4 +301,6 @@ try {
 - 密码仅通过 HTTPS 传输
 - 不在客户端持久化密码（除 sessionStorage）
 - 403 错误应清除本地密码缓存
+- 分享令牌仅存储在内存中（组件状态），不持久化
+- 分享访问使用 Header 认证而非 Cookie，避免 CORS 问题
 

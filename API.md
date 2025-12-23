@@ -81,14 +81,16 @@ npm run db:init:prod
 
 **数据库迁移 (如果是从旧版本升级):**
 
-如果你已经有现有的数据库，需要添加 `isLocked` 字段，请运行迁移脚本：
+如果你已经有现有的数据库，需要运行迁移脚本：
 
 ```bash
-# 本地环境
+# 添加 isLocked 字段（文件夹加锁功能）
 npx wrangler d1 execute loaf-db --local --file=./migration-add-islocked.sql
-
-# 生产环境（远程数据库）
 npx wrangler d1 execute loaf-db --remote --file=./migration-add-islocked.sql
+
+# 添加 Shares 表（分享功能）
+npx wrangler d1 execute loaf-db --local --file=./migration-add-shares.sql
+npx wrangler d1 execute loaf-db --remote --file=./migration-add-shares.sql
 ```
 
 **验证迁移是否成功:**
@@ -96,6 +98,10 @@ npx wrangler d1 execute loaf-db --remote --file=./migration-add-islocked.sql
 ```bash
 # 查看表结构
 npx wrangler d1 execute loaf-db --local --command="PRAGMA table_info(Files);"
+npx wrangler d1 execute loaf-db --local --command="PRAGMA table_info(Shares);"
+
+# 查看所有表
+npx wrangler d1 execute loaf-db --local --command="SELECT name FROM sqlite_master WHERE type='table';"
 ```
 
 ### 4. 启动开发服务
@@ -568,7 +574,7 @@ curl "http://localhost:8787/api/shares/AbCd123456"
 ### 验证分享密码
 `POST /api/shares/:code/verify`
 
-验证分享密码，成功后设置 cookie。
+验证分享密码，成功后返回访问凭证。
 
 Body (JSON):
 - `password`: 密码 (必填)
@@ -587,12 +593,12 @@ curl -X POST "http://localhost:8787/api/shares/AbCd123456/verify" \
   "message": "success",
   "data": {
     "message": "Password verified",
-    "token": "token-uuid"
+    "accessToken": "AbCd123456:token-uuid"
   }
 }
 ```
 
-返回的 Cookie: `share_token=AbCd123456:token-uuid`
+**重要**: 请保存返回的 `accessToken`，在后续请求中通过 Header `x-share-token` 传递。
 
 ### 获取分享的文件列表
 `GET /api/shares/:code/files`
@@ -605,19 +611,20 @@ curl -X POST "http://localhost:8787/api/shares/AbCd123456/verify" \
 - `limit`: 每页数量 (默认 50)
 
 Headers:
-- `Cookie`: 如果分享有密码，需要携带验证后的 cookie
+- `x-share-token`: 如果分享有密码，需要携带验证后的访问凭证
 
 **示例:**
 ```bash
 # 获取分享内容（无密码）
 curl "http://localhost:8787/api/shares/AbCd123456/files"
 
-# 获取分享内容（有密码，需要 cookie）
+# 获取分享内容（有密码，需要访问凭证）
 curl "http://localhost:8787/api/shares/AbCd123456/files" \
-  -H "Cookie: share_token=AbCd123456:token-uuid"
+  -H "x-share-token: AbCd123456:token-uuid"
 
 # 浏览子文件夹
-curl "http://localhost:8787/api/shares/AbCd123456/files?subFolderId=subfolder-uuid"
+curl "http://localhost:8787/api/shares/AbCd123456/files?subFolderId=subfolder-uuid" \
+  -H "x-share-token: AbCd123456:token-uuid"
 ```
 
 **响应（文件夹）:**
@@ -673,7 +680,7 @@ curl "http://localhost:8787/api/shares/AbCd123456/files?subFolderId=subfolder-uu
 下载分享的文件。
 
 Headers:
-- `Cookie`: 如果分享有密码，需要携带验证后的 cookie
+- `x-share-token`: 如果分享有密码，需要携带验证后的访问凭证
 
 **示例:**
 ```bash
@@ -682,7 +689,7 @@ curl "http://localhost:8787/api/shares/AbCd123456/download/file-uuid" --output f
 
 # 下载文件（有密码）
 curl "http://localhost:8787/api/shares/AbCd123456/download/file-uuid" \
-  -H "Cookie: share_token=AbCd123456:token-uuid" \
+  -H "x-share-token: AbCd123456:token-uuid" \
   --output file.pdf
 ```
 
