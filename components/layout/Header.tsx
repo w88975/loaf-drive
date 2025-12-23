@@ -7,7 +7,7 @@ interface HeaderProps {
   onOpenSidebar: () => void;
   currentFolderId: string | null;
   navigationHistory: DriveItem[];
-  onNavigate: (id: string | null) => void;
+  onNavigate: (id: string | null, item?: DriveItem) => void;
   searchQuery: string;
   onSearchChange: (val: string) => void;
   viewMode: 'grid' | 'list';
@@ -33,7 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
           {navigationHistory.map((p) => (
             <React.Fragment key={p.id}>
               <Icons.ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
-              <button onClick={() => onNavigate(p.id)} className="hover:underline truncate uppercase">{p.name}</button>
+              <button onClick={() => onNavigate(p.id, p)} className="hover:underline truncate uppercase">{p.name}</button>
             </React.Fragment>
           ))}
         </div>

@@ -17,11 +17,23 @@ export const formatDate = (timestamp: number): string => {
   }).format(new Date(timestamp));
 };
 
+export type FileCategory = 'image' | 'video' | 'audio' | 'text' | 'other';
+
+export const getFileCategory = (extension?: string): FileCategory => {
+  const ext = extension?.toLowerCase() || '';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext)) return 'image';
+  if (['mp4', 'webm', 'ogg', 'mov', 'm4v'].includes(ext)) return 'video';
+  if (['mp3', 'wav', 'flac', 'aac', 'm4a', 'wma', 'ogg'].includes(ext)) return 'audio';
+  if (['txt', 'md', 'json', 'js', 'ts', 'tsx', 'jsx', 'css', 'html', 'py', 'java', 'c', 'cpp', 'rs', 'go', 'sh', 'yaml', 'xml', 'sql', 'toml', 'ini', 'env', 'gitignore'].includes(ext)) return 'text';
+  return 'other';
+};
+
 export const getFileIcon = (type: string, extension?: string) => {
   if (type === 'folder') return 'folder';
-  const ext = extension?.toLowerCase();
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) return 'image';
-  if (['mp4', 'webm', 'ogg', 'mov'].includes(ext || '')) return 'video';
+  const category = getFileCategory(extension);
+  if (category === 'image') return 'image';
+  if (category === 'video') return 'video';
+  if (category === 'audio') return 'file'; // Ideally we'd have an audio icon but reuse file for now
   return 'file';
 };
 

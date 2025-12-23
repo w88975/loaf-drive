@@ -76,7 +76,7 @@ const App: React.FC = () => {
           onOpenSidebar={() => setIsSidebarOpen(true)}
           currentFolderId={isTrash ? 'trash' : currentFolderId}
           navigationHistory={isTrash ? [] : path}
-          onNavigate={(id) => handleNavigate(id)}
+          onNavigate={handleNavigate}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           viewMode={viewMode}
@@ -90,8 +90,10 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={
               <FilesView 
+                key={currentFolderId || 'root'}
                 currentFolderId={currentFolderId}
                 setCurrentFolderId={handleNavigate}
+                navigationHistory={path}
                 searchQuery={searchQuery}
                 viewMode={viewMode}
                 onPreview={setPreviewItem}

@@ -15,6 +15,7 @@ const STORAGE_KEY = 'geek_drive_folder_passwords';
 interface FilesViewProps {
   currentFolderId: string | null;
   setCurrentFolderId: (id: string | null, item?: DriveItem) => void;
+  navigationHistory: DriveItem[];
   searchQuery: string;
   viewMode: 'grid' | 'list';
   onPreview: (item: DriveItem) => void;
@@ -22,7 +23,7 @@ interface FilesViewProps {
 }
 
 export const FilesView: React.FC<FilesViewProps> = ({ 
-  currentFolderId, setCurrentFolderId, searchQuery, viewMode, onPreview, onUploadClick 
+  currentFolderId, setCurrentFolderId, navigationHistory, searchQuery, viewMode, onPreview, onUploadClick 
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -33,7 +34,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
   const [targetItem, setTargetItem] = useState<DriveItem | null>(null);
 
   // 从 sessionStorage 获取当前文件夹的密码
-  const getCachedPassword = (folderId: string | null): string | undefined => {
+  const getCachedPassword = useCallback((folderId: string | null): string | undefined => {
     if (!folderId) return undefined;
     try {
       const stored = sessionStorage.getItem(STORAGE_KEY);
@@ -43,7 +44,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
     } catch {
       return undefined;
     }
-  };
+  }, []);
 
   const setCachedPassword = (folderId: string, password: string) => {
     try {
@@ -66,19 +67,13 @@ export const FilesView: React.FC<FilesViewProps> = ({
     } catch {}
   };
 
-  // 当前激活的密码（用于 React Query 依赖）
-  const [folderPassword, setFolderPassword] = useState<string | undefined>(getCachedPassword(currentFolderId));
+  // 初始化即从缓存读取，配合 App 层的 key 机制，确保面包屑导航带入密码
+  const [folderPassword, setFolderPassword] = useState<string | undefined>(() => getCachedPassword(currentFolderId));
 
   const { data: items = [], isLoading, error, refetch } = useFiles(currentFolderId, searchQuery, folderPassword);
   const { createFolder, renameItem, toggleLock, deleteItems, moveItems } = useDriveMutations();
 
-  // 监听文件夹切换，同步缓存密码
-  useEffect(() => {
-    const cached = getCachedPassword(currentFolderId);
-    setFolderPassword(cached);
-  }, [currentFolderId]);
-
-  // 如果请求报错 403，说明缓存的密码失效了，清除缓存并提示重新输入
+  // 如果请求报错 403，说明缓存的密码失效或未提供
   useEffect(() => {
     if (error && (error as any).code === 403 && currentFolderId) {
       removeCachedPassword(currentFolderId);
@@ -110,14 +105,14 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
   const handleContextMenu = (e: React.MouseEvent, item: DriveItem) => {
     e.preventDefault();
-    setContainerContextMenu(null); // 关闭容器菜单
+    setContainerContextMenu(null);
     if (!selectedIds.has(item.id)) setSelectedIds(new Set([item.id]));
     setContextMenu({ x: e.pageX, y: e.pageY, item });
   };
 
   const handleContainerContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    setContextMenu(null); // 关闭项菜单
+    setContextMenu(null);
     setContainerContextMenu({ x: e.pageX, y: e.pageY });
   };
 
@@ -138,16 +133,17 @@ export const FilesView: React.FC<FilesViewProps> = ({
   };
 
   const handlePasswordConfirm = (password: string) => {
-    if (activeModal === 'password-enter' && targetItem) {
-      setCachedPassword(targetItem.id, password);
-      setFolderPassword(password);
-      setCurrentFolderId(targetItem.id, targetItem);
-      setActiveModal(null);
-    } else if (activeModal === 'password-enter' && !targetItem && currentFolderId) {
-      // 这里的逻辑处理 Retry Password 按钮
-      setCachedPassword(currentFolderId, password);
-      setFolderPassword(password);
-      setActiveModal(null);
+    if (activeModal === 'password-enter') {
+      const idToCache = targetItem?.id || currentFolderId;
+      if (idToCache) {
+        setCachedPassword(idToCache, password);
+        setFolderPassword(password);
+        if (targetItem) {
+          setCurrentFolderId(targetItem.id, targetItem);
+          setTargetItem(null);
+        }
+        setActiveModal(null);
+      }
     } else if (activeModal === 'password-unlock' && targetItem) {
       toggleLock.mutate(
         { id: targetItem.id, isLocked: false, password },
@@ -170,8 +166,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
     return () => window.removeEventListener('click', handleGlobalClick);
   }, [contextMenu, containerContextMenu]);
 
+  // 从路径历史中获取当前文件夹名称
+  const currentFolderName = useMemo(() => {
+    if (targetItem) return targetItem.name;
+    const historyItem = navigationHistory.find(h => h.id === currentFolderId);
+    return historyItem?.name || 'FOLDER';
+  }, [targetItem, navigationHistory, currentFolderId]);
+
   return (
-    <div className="flex flex-col h-full" onClick={() => selectedIds.size > 0 && setSelectedIds(new Set())}>
+    <div className="flex flex-col h-full">
       <div className="p-4 md:p-6 pb-2 flex flex-wrap gap-2">
         <button onClick={onUploadClick} className="flex items-center space-x-2 bg-black text-white px-3 md:px-4 py-2 hover:bg-yellow-400 hover:text-black border-2 border-black text-[10px] md:text-xs font-bold uppercase transition-colors">
           <Icons.Plus className="w-3 h-3" /><span>Upload</span>
@@ -185,20 +188,19 @@ export const FilesView: React.FC<FilesViewProps> = ({
       >
         {isLoading ? (
           <div className="h-full flex items-center justify-center"><Icons.Grid className="w-10 h-10 animate-spin" /></div>
-        ) : error ? (
+        ) : error && !items.length ? (
           <div className="h-full flex flex-col items-center justify-center space-y-4">
              <div className="text-red-500 font-bold uppercase italic text-sm">Access Denied</div>
              <p className="text-[10px] text-gray-500">{(error as any).message || 'This folder is encrypted or access timed out.'}</p>
              <div className="flex space-x-2">
                <button onClick={() => setCurrentFolderId(null)} className="border-2 border-black px-4 py-2 text-xs font-bold hover:bg-yellow-400 uppercase">Back to Root</button>
-               {(error as any).message?.includes('403') || (error as any).code === 403 ? (
-                 <button onClick={() => setActiveModal('password-enter')} className="bg-black text-white px-4 py-2 text-xs font-bold hover:bg-yellow-400 hover:text-black uppercase border-2 border-black">Retry Password</button>
-               ) : null}
+               <button onClick={() => setActiveModal('password-enter')} className="bg-black text-white px-4 py-2 text-xs font-bold hover:bg-yellow-400 hover:text-black uppercase border-2 border-black">Retry Password</button>
              </div>
           </div>
         ) : sortedItems.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-30 uppercase font-bold italic">Empty Directory</div>
         ) : viewMode === 'grid' ? (
+          /* Fixed: Removed 'setSelectedIds' as it is not a valid prop on GridView */
           <GridView 
             items={sortedItems} selectedIds={selectedIds}
             onItemClick={(item) => selectedIds.size > 0 ? toggleSelect(item.id) : item.type === 'folder' ? handleNavigate(item) : onPreview(item)}
@@ -229,7 +231,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
       
       {(activeModal === 'password-enter' || activeModal === 'password-unlock') && (
         <PasswordModal 
-          folderName={targetItem?.name || (items.find(i => i.id === currentFolderId)?.name) || 'Folder'} 
+          folderName={currentFolderName} 
           onClose={() => setActiveModal(null)} 
           onConfirm={handlePasswordConfirm} 
         />
