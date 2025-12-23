@@ -11,7 +11,13 @@ const { API_HOST } = CONFIG;
 
 async function apiFetch<T>(url: string, options: RequestInit = {}, retries = 2): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(url, options);
+    // 增加 credentials: 'include' 以支持跨域 Cookie (分享验证所必需)
+    const fetchOptions: RequestInit = {
+      ...options,
+      credentials: 'include',
+    };
+    
+    const response = await fetch(url, fetchOptions);
     
     if (!response.ok && retries > 0 && response.status >= 500) {
       await new Promise(resolve => setTimeout(resolve, 1000));

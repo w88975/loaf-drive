@@ -32,6 +32,7 @@ export const ShareView: React.FC = () => {
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [navigationStack, setNavigationStack] = useState<{id: string, name: string}[]>([]);
+  const [showManualPassword, setShowManualPassword] = useState(false);
 
   // 3. 数据查询：先获取分享的基础信息（判断是否有密码）
   const { data: shareInfo, isLoading: infoLoading, error: infoError } = useShareInfo(code || '');
@@ -70,7 +71,9 @@ export const ShareView: React.FC = () => {
     try {
       const res = await driveApi.verifySharePassword(code, pwd);
       if (res.code === 0) {
-        refetch();
+        // 验证成功后，手动关闭密码框，并强制重新拉取数据
+        setShowManualPassword(false);
+        await refetch();
       } else {
         alert('Invalid Password');
       }
@@ -98,7 +101,8 @@ export const ShareView: React.FC = () => {
   }, [shareContent, sortKey, sortOrder]);
 
   // 9. 异常状态处理 (403 触发密码框)
-  const needsPassword = (contentError as any)?.code === 403;
+  // 增加 showManualPassword 状态控制，避免 refetch 瞬间由于旧错误导致的闪烁
+  const needsPassword = (contentError as any)?.code === 403 || showManualPassword;
 
   if (infoLoading) {
     return (
@@ -154,9 +158,7 @@ export const ShareView: React.FC = () => {
               <Icons.List className="w-4 h-4" />
             </button>
           </div>
-          <Link to="/" className="p-2 border-2 border-black hover:bg-black hover:text-white transition-all">
-            <Icons.Close className="w-5 h-5" />
-          </Link>
+          {/* 移除分享页面的关闭/跳转按钮 */}
         </div>
       </header>
 
@@ -245,6 +247,7 @@ export const ShareView: React.FC = () => {
           <div className="h-64 flex flex-col items-center justify-center">
             <Icons.Archive className="w-16 h-16 opacity-10 mb-4" />
             <p className="text-xs font-black uppercase tracking-widest text-gray-400">Restricted Access</p>
+            <button onClick={() => setShowManualPassword(true)} className="mt-4 border-2 border-black px-4 py-2 font-bold uppercase hover:bg-yellow-400 text-[10px]">Enter Password</button>
           </div>
         ) : null}
       </main>
@@ -255,10 +258,12 @@ export const ShareView: React.FC = () => {
         </p>
       </footer>
 
+      {/* 密码弹窗 */}
       {needsPassword && (
         <PasswordModal 
           folderName={shareInfo?.file?.filename || 'Encrypted Item'} 
-          onClose={() => { window.location.href = '/'; }} 
+          // 取消时不再重定向到首页，而是保留在当前页并关闭模态框
+          onClose={() => { setShowManualPassword(false); }} 
           onConfirm={handlePasswordConfirm} 
         />
       )}
