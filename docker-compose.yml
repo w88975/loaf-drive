@@ -1,0 +1,30 @@
+
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "8080:80"
+    restart: always
+    networks:
+      - drive-network
+
+  # 假设你的后端代码也在当前目录下或指定路径
+  # backend:
+  #   build: ./backend
+  #   environment:
+  #     - DATABASE_URL=file:./data/drive.db
+  #     - R2_BUCKET_NAME=your-bucket
+  #     - R2_ACCESS_KEY_ID=${R2_KEY_ID}
+  #     - R2_SECRET_ACCESS_KEY=${R2_SECRET_KEY}
+  #   volumes:
+  #     - ./backend/data:/app/data
+  #   ports:
+  #     - "8787:8787"
+  #   networks:
+  #     - drive-network
+
+networks:
+  drive-network:
+    driver: bridge
