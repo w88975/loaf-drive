@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, HashRouter } from 'react-router-dom';
 import App from './App';
 import './src/index.css';
+import './i18n';
 
 /**
  * 配置 TanStack Query 客户端实例

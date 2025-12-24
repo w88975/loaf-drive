@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import hljs from 'highlight.js';
 import { DriveItem } from '../../types';
 import { CONFIG } from '../../config';
@@ -21,19 +22,9 @@ import { CONFIG } from '../../config';
 const STORAGE_KEY = 'geek_drive_folder_passwords';
 
 export const TextViewer: React.FC<{ item: DriveItem }> = ({ item }) => {
-  /**
-   * 文件内容状态
-   */
+  const { t } = useTranslation();
   const [content, setContent] = useState<string>('');
-  
-  /**
-   * 加载状态
-   */
   const [loading, setLoading] = useState(true);
-  
-  /**
-   * 错误信息
-   */
   const [error, setError] = useState<string | null>(null);
   
   /**
@@ -137,7 +128,7 @@ export const TextViewer: React.FC<{ item: DriveItem }> = ({ item }) => {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
         <div className="animate-spin h-8 w-8 border-4 border-black border-t-transparent rounded-full" />
-        <p className="text-[10px] font-bold uppercase animate-pulse">Fetching Source...</p>
+        <p className="text-[10px] font-bold uppercase animate-pulse">{t('preview.loading')}</p>
       </div>
     );
   }
@@ -151,7 +142,7 @@ export const TextViewer: React.FC<{ item: DriveItem }> = ({ item }) => {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <div className="text-red-500 text-4xl mb-4 font-black">!</div>
-        <h3 className="text-sm font-bold uppercase mb-2">Fetch Failed</h3>
+        <h3 className="text-sm font-bold uppercase mb-2">{t('preview.loadFailed')}</h3>
         <p className="text-[10px] text-gray-500 uppercase max-w-xs">{error}</p>
         <p className="text-[8px] mt-4 text-gray-400 italic">This usually happens due to CORS or incorrect folder permissions.</p>
       </div>

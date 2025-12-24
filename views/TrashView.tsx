@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../constants';
 import { DriveItem, SortKey, SortOrder } from '../types';
 import { useRecycleBin, useRecycleMutations } from '../hooks/useDriveQueries';

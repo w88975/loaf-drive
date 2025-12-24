@@ -5,6 +5,7 @@
 
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icons } from './constants';
 import { DriveItem } from './types';
 import { useUpload } from './hooks/useUpload';
@@ -20,6 +21,7 @@ import { AuthView } from './views/AuthView';
 import { authManager } from './auth';
 
 const App: React.FC = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [path, setPath] = useState<DriveItem[]>([]);
@@ -100,7 +102,7 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm pointer-events-none flex items-center justify-center p-8">
           <div className="w-full h-full border-4 border-dashed border-yellow-400 flex flex-col items-center justify-center text-yellow-400 space-y-4">
             <Icons.Plus className="w-24 h-24 animate-bounce" />
-            <span className="text-4xl font-bold italic uppercase tracking-widest">Drop to upload</span>
+            <span className="text-4xl font-bold italic uppercase tracking-widest">{t('header.dropToUpload')}</span>
           </div>
         </div>
       )}

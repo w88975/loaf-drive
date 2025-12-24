@@ -5,10 +5,12 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../constants';
 import { DriveItem } from '../../types';
 
 export const UnsupportedViewer: React.FC<{ item: DriveItem, onOpenAsText: () => void }> = ({ item, onOpenAsText }) => {
+  const { t } = useTranslation();
   const MAX_TEXT_VIEW_SIZE = 5 * 1024 * 1024;
   const fileSize = item.size || 0;
   const isTooLarge = fileSize > MAX_TEXT_VIEW_SIZE;
@@ -17,10 +19,10 @@ export const UnsupportedViewer: React.FC<{ item: DriveItem, onOpenAsText: () => 
     <div className="flex flex-col items-center justify-center h-full text-center p-8">
       <Icons.File className="w-24 h-24 mb-6 opacity-20" />
       
-      <h3 className="text-xl font-bold uppercase italic mb-2">Preview Not Available</h3>
+      <h3 className="text-xl font-bold uppercase italic mb-2">{t('preview.previewNotAvailable')}</h3>
       
       <p className="text-gray-500 text-xs uppercase font-bold mb-8">
-        We don't support previewing .{item.extension} files yet.
+        {t('preview.notSupported')}
       </p>
       
       <div className="flex flex-col items-center space-y-4">
@@ -29,23 +31,23 @@ export const UnsupportedViewer: React.FC<{ item: DriveItem, onOpenAsText: () => 
             onClick={onOpenAsText}
             disabled={isTooLarge}
             className="px-6 py-3 border-4 border-black font-bold uppercase transition-all text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-yellow-400 disabled:hover:bg-transparent"
-            title={isTooLarge ? 'File too large for text preview (max 5MB)' : 'Try opening as text'}
+            title={isTooLarge ? t('preview.fileTooLarge') : t('preview.tryOpenAsText')}
           >
-            Try opening as text
+            {t('preview.tryOpenAsText')}
           </button>
           
           <a 
             href={item.url} 
             download 
-            className="px-6 py-3 bg-black text-white font-bold uppercase hover:bg-yellow-400 hover:text-black border-4 border-black transition-all text-xs"
-          >
-            Download File
-          </a>
+          className="px-6 py-3 bg-black text-white font-bold uppercase hover:bg-yellow-400 hover:text-black border-4 border-black transition-all text-xs"
+        >
+          {t('preview.downloadFile')}
+        </a>
         </div>
         
         {isTooLarge && (
           <p className="text-red-500 text-[10px] font-bold uppercase tracking-wide">
-            ⚠ File exceeds 5MB limit for text preview
+            ⚠ {t('preview.fileTooLarge')}
           </p>
         )}
       </div>

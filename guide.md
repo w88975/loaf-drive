@@ -17,6 +17,12 @@
 │   ├── ShareView        # 公开分享页（外部访问）
 │   ├── SharesManagementView  # 分享管理视图
 │   └── TrashView        # 回收站视图
+├── i18n/                # 国际化配置
+│   ├── index.ts         # i18n 初始化
+│   ├── locales/         # 翻译文件
+│   │   ├── zh.ts       # 中文翻译
+│   │   └── en.ts       # 英文翻译
+│   └── README.md        # i18n 使用文档
 ├── auth.ts              # API Key 认证管理
 ├── index.tsx            # 应用入口
 ├── App.tsx              # 根组件与路由
@@ -35,6 +41,7 @@
   - 使用 HashRouter 实现客户端路由
   - React 18 并发模式启动
   - 导入 Tailwind CSS 样式（本地化）
+  - 初始化 i18n 多语言系统
 
 ### App.tsx - 根组件
 - **功能**：全局状态管理、路由配置和认证守卫
@@ -119,6 +126,11 @@
    - 字体文件本地化（Inter、JetBrains Mono）
    - Highlight.js CSS 本地化
    - 减少外部依赖，提升加载速度
+7. **国际化支持**：
+   - 使用 react-i18next 实现多语言切换
+   - 支持中文和英文界面
+   - 语言偏好持久化存储
+   - 自动检测浏览器语言
 
 ### 用户体验
 1. **拖拽上传**：支持拖拽文件和整个文件夹

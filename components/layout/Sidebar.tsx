@@ -6,6 +6,7 @@
 
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Icons } from "../../constants";
 import { CONFIG } from "../../config";
 import { authManager } from "../../auth";
@@ -22,10 +23,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectRoot,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  /**
-   * 提取 API 主机名用于底部节点状态显示
-   */
   const hostName = new URL(CONFIG.API_HOST).hostname;
 
   /**
@@ -115,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             GEEK.DRIVE
           </h1>
           <p className="text-[10px] uppercase text-gray-500 mt-1">
-            Status: Online
+            {t('sidebar.status')}: {t('sidebar.online')}
           </p>
         </div>
 
@@ -124,17 +123,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
          * 包含所有主要路由链接
          */}
         <nav className="mt-4">
-          {/* 文件页面：点击时重置到根目录 */}
           <SidebarItem
             icon={<Icons.Grid3x3 />}
-            label="All Files"
+            label={t('nav.allFiles')}
             to="/"
             onClick={onSelectRoot}
           />
-          {/* 分享管理页面 */}
-          <SidebarItem icon={<Icons.Share />} label="Shares" to="/shares" />
-          {/* 回收站页面 */}
-          <SidebarItem icon={<Icons.Trash />} label="Trash" to="/trash" />
+          <SidebarItem icon={<Icons.Share />} label={t('nav.shares')} to="/shares" />
+          <SidebarItem icon={<Icons.Trash />} label={t('nav.trash')} to="/trash" />
         </nav>
 
         {/*
@@ -150,17 +146,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className="w-full p-3 border-b-2 border-black hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 font-bold uppercase text-xs"
           >
             <Icons.Close className="w-4 h-4" />
-            Logout
+            {t('nav.logout')}
           </button>
           <div className="p-6">
             <div className="flex justify-between items-end mb-2">
-              <span className="text-xs uppercase font-bold">Cloud Nodes</span>
-              <span className="text-[10px] text-gray-500">Live API</span>
+              <span className="text-xs uppercase font-bold">{t('sidebar.cloudNodes')}</span>
+              <span className="text-[10px] text-gray-500">{t('sidebar.liveApi')}</span>
             </div>
             <div className="text-[9px] text-gray-400 uppercase leading-tight">
-              Connected to {hostName}
+              {t('sidebar.connectedTo')} {hostName}
               <br />
-              Secure storage protocol v1
+              {t('sidebar.secureStorage')}
             </div>
           </div>
         </div>

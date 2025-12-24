@@ -16,6 +16,7 @@ layout 目录包含定义应用整体结构的骨架组件，负责：
 - 搜索和视图模式控制
 - 面包屑导航
 - 上传进度显示
+- 语言切换功能
 
 ### 设计原则
 - **固定布局**：Header 和 Sidebar 位置固定
@@ -62,6 +63,7 @@ Header (固定顶部, h-14)
 │   ├── 面包屑导航
 │   └── 搜索框
 └── 右侧区域
+    ├── 语言切换按钮
     ├── 视图切换按钮
     └── 上传进度指示
 ```
@@ -127,6 +129,31 @@ Header (固定顶部, h-14)
 - 全局搜索：忽略当前文件夹，搜索所有文件
 - 实时反馈：输入变化立即触发搜索
 - 清除搜索：返回当前文件夹视图
+
+#### 语言切换按钮
+**功能**：
+- 中文/英文界面切换
+- 显示当前语言（中/EN）
+- 语言偏好持久化
+
+**实现**：
+```typescript
+const { i18n } = useTranslation();
+
+const toggleLanguage = () => {
+  const newLang = i18n.language === 'zh' ? 'en' : 'zh';
+  i18n.changeLanguage(newLang);
+};
+
+<button onClick={toggleLanguage}>
+  {i18n.language === 'zh' ? '中' : 'EN'}
+</button>
+```
+
+**行为**：
+- 点击切换语言，界面立即更新
+- 语言选择保存到 localStorage
+- 刷新页面后保持选择的语言
 
 #### 视图模式切换
 **功能**：

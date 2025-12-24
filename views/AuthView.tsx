@@ -9,11 +9,13 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../constants';
 import { authManager } from '../auth';
 import { CONFIG } from '../config';
 
 export const AuthView: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -24,7 +26,7 @@ export const AuthView: React.FC = () => {
     e.preventDefault();
     
     if (!apiKey.trim()) {
-      setError('API Key cannot be empty');
+      setError(t('auth.apiKeyEmpty'));
       return;
     }
 
@@ -48,16 +50,14 @@ export const AuthView: React.FC = () => {
         // 验证成功，跳转到主页
         navigate('/');
       } else if (result.code === 401) {
-        // 验证失败
         authManager.clearApiKey();
-        setError('Invalid API Key');
+        setError(t('auth.invalidApiKey'));
       } else {
-        // 其他错误
-        setError(result.message || 'Verification failed');
+        setError(result.message || t('auth.verificationFailed'));
       }
     } catch (err) {
       authManager.clearApiKey();
-      setError('Network error or server unreachable');
+      setError(t('auth.networkError'));
     } finally {
       setIsVerifying(false);
     }
@@ -82,7 +82,7 @@ export const AuthView: React.FC = () => {
             GEEK.DRIVE
           </h1>
           <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
-            Secure Storage Protocol v1
+            {t('sidebar.secureStorage')}
           </p>
         </div>
 
@@ -91,10 +91,10 @@ export const AuthView: React.FC = () => {
           {/* 标题栏 */}
           <div className="bg-yellow-400 border-b-4 border-black p-4">
             <h2 className="font-black uppercase italic tracking-tight text-lg">
-              Authentication Required
+              {t('auth.required')}
             </h2>
             <p className="text-[10px] font-bold uppercase tracking-wider text-black/60 mt-1">
-              Enter your API Key to continue
+              {t('auth.enterApiKey')}
             </p>
           </div>
 
@@ -103,7 +103,7 @@ export const AuthView: React.FC = () => {
             {/* API Key 输入框 */}
             <div>
               <label className="block text-xs font-black uppercase tracking-widest mb-2">
-                API Key
+                {t('auth.apiKeyLabel')}
               </label>
               <div className="relative">
                 <input
@@ -118,7 +118,7 @@ export const AuthView: React.FC = () => {
                       handleSubmit(e);
                     }
                   }}
-                  placeholder="ENTER YOUR API KEY"
+                  placeholder={t('auth.apiKeyPlaceholder').toUpperCase()}
                   className="w-full border-2 border-black p-3 font-mono font-bold uppercase tracking-wider outline-none focus:bg-yellow-50 transition-colors placeholder:text-gray-300"
                   disabled={isVerifying}
                   autoFocus
@@ -149,8 +149,7 @@ export const AuthView: React.FC = () => {
             {/* 提示信息 */}
             <div className="border-2 border-black bg-gray-50 p-3">
               <p className="text-[10px] font-bold uppercase text-gray-600 leading-relaxed">
-                ⚠️ Your API Key is stored locally and will be sent with every request. 
-                Keep it secure.
+                ⚠️ {t('auth.securityNote')}
               </p>
             </div>
 
@@ -163,10 +162,10 @@ export const AuthView: React.FC = () => {
               {isVerifying ? (
                 <span className="flex items-center justify-center gap-2">
                   <Icons.Grid className="w-5 h-5 animate-spin" />
-                  Verifying...
+                  {t('auth.verifying')}
                 </span>
               ) : (
-                'Access Drive'
+                t('auth.authenticate')
               )}
             </button>
           </form>

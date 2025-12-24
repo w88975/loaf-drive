@@ -30,6 +30,7 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 │   └── preview/        # 多媒体预览专用解析组件
 ├── hooks/              # 逻辑抽象层：状态管理、数据获取、上传引擎
 ├── views/              # 视图层：对应路由的主要页面
+├── i18n/               # 国际化配置：多语言支持 (中文/英文)
 ├── types.ts            # 全局类型定义
 ├── utils.ts            # 工具库
 ├── constants.tsx       # 静态资源与常量
@@ -43,7 +44,7 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 ### 🛠️ 核心基础类
 | 文件名 | 实现功能 | 核心细节 |
 | :--- | :--- | :--- |
-| **index.tsx** | 应用入口 | 配置 `QueryClient` 缓存策略；初始化 `HashRouter`；挂载 React 根节点；导入 Tailwind CSS 样式。 |
+| **index.tsx** | 应用入口 | 配置 `QueryClient` 缓存策略；初始化 `HashRouter`；挂载 React 根节点；导入 Tailwind CSS 样式；初始化 i18n 多语言系统。 |
 | **App.tsx** | 核心路由与容器 | 负责全局布局；管理导航路径状态 (`path`)；实现全局拖拽上传监听容器；集成 `useUpload` 状态。 |
 | **types.ts** | 类型系统 | 定义 `DriveItem`（文件/文件夹统一模型）、`UploadTask`、`SortKey` 等核心接口。 |
 | **utils.ts** | 客户端处理中心 | 实现 `getVideoFramesWeb`（客户端离线视频截图）；`getImageThumbnailWeb`（150x150 缩略图生成）；文件分类算法。 |
@@ -72,7 +73,7 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 | **drive/ListView.tsx** | 列表表格 | 实现带有排序反馈（↑/↓）的表头；优化移动端展示。 |
 | **drive/ContextMenu.tsx** | 右键菜单 | 具备 **视口溢出检测** 功能；支持重命名、移动、删除、加锁等快捷操作。 |
 | **drive/SelectionBar.tsx** | 批量操作栏 | 当选中多个文件时弹出，提供统一的删除或移动接口。 |
-| **layout/Header.tsx** | 导航头 | 实现面包屑路径跳转；实时显示全局上传进度条及上传数量。 |
+| **layout/Header.tsx** | 导航头 | 实现面包屑路径跳转；实时显示全局上传进度条及上传数量；提供语言切换按钮（中/EN）。 |
 | **layout/Sidebar.tsx** | 侧边栏 | 处理应用主导航；显示当前连接的 Cloudflare 节点状态。 |
 | **overlays/Modals.tsx** | 统一模态框 | 包含：新建文件夹、重命名、**递归删除确认**、树形移动选框、密码输入框。 |
 | **overlays/UploadPanel.tsx** | 传输面板 | 悬浮显示上传队列；支持取消上传任务；区分上传中、处理中、已完成等状态。 |
@@ -116,6 +117,8 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 | **@tanstack/react-query** | ^5.66.0 | 服务端状态管理与缓存 |
 | **lucide-react** | ^0.562.0 | 现代图标库（1000+ 图标） |
 | **highlight.js** | ^11.9.0 | 代码语法高亮 |
+| **i18next** | ^25.7.3 | 国际化核心框架 |
+| **react-i18next** | ^16.5.0 | React 国际化集成 |
 | **tailwindcss** | ^3.4.1 | 原子化 CSS 框架（本地化） |
 | **typescript** | ^5.3.3 | 类型系统 |
 | **vite** | ^5.1.4 | 构建工具 |
@@ -126,6 +129,14 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 - **按需引入**: 支持 Tree-shaking，只打包使用的图标
 - **高度可定制**: 支持 size、color、strokeWidth 等属性
 - **30+ 常用图标**: 涵盖文件类型、操作、导航、状态等场景
+
+### 国际化支持
+
+- **多语言**: 支持中文（简体）和英文
+- **自动检测**: 首次访问根据浏览器语言自动选择
+- **持久化**: 语言偏好保存在 localStorage
+- **实时切换**: 无需刷新页面即可切换语言
+- **详细文档**: 参见 [i18n/README.md](./i18n/README.md)
 
 ### 本地化资源
 

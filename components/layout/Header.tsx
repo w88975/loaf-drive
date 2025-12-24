@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../constants';
 import { DriveItem } from '../../types';
 
@@ -27,6 +28,13 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery, onSearchChange, viewMode, onViewModeChange,
   uploadingCount, overallProgress, onToggleUploadPanel
 }) => {
+  const { t, i18n } = useTranslation();
+  
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'zh' ? 'en' : 'zh';
+    i18n.changeLanguage(newLang);
+  };
+  
   return (
     /**
      * Header 主容器
@@ -50,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
          * - truncate: 路径过长时截断显示
          */}
         <div className="flex items-center space-x-1 md:space-x-2 text-xs md:text-sm font-bold overflow-hidden truncate">
-          <button onClick={() => onNavigate(null)} className="hover:underline uppercase flex-shrink-0">ROOT</button>
+          <button onClick={() => onNavigate(null)} className="hover:underline uppercase flex-shrink-0">{t('common.root')}</button>
           {navigationHistory.map((p) => (
             <React.Fragment key={p.id}>
               <Icons.ChevronRight className="w-3 h-3 md:w-4 md:h-4" />
@@ -71,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
          */}
         <div className="relative hidden sm:block">
           <input 
-            type="text" placeholder="SEARCH..." 
+            type="text" placeholder={t('common.search').toUpperCase()} 
             className="pl-8 pr-4 py-1 border-2 border-black focus:bg-yellow-100 outline-none text-[10px] md:text-xs w-32 md:w-48 transition-all focus:w-64"
             value={searchQuery} onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -89,21 +97,25 @@ export const Header: React.FC<HeaderProps> = ({
         {uploadingCount > 0 && (
           <button onClick={onToggleUploadPanel} className="relative flex items-center space-x-2 border-2 border-black px-2 py-1 text-[10px] font-bold uppercase bg-yellow-400 animate-pulse">
             <Icons.Download className="w-4 h-4 rotate-180" />
-            <span className="hidden md:inline">UPLOADING {uploadingCount}...</span>
-            {/* 底部进度条：通过 width 百分比动态显示进度 */}
+            <span className="hidden md:inline">{t('header.uploading').toUpperCase()} {uploadingCount}...</span>
             <div className="absolute -bottom-2.5 left-0 w-full h-1 bg-black/10 overflow-hidden">
               <div className="h-full bg-black transition-all" style={{ width: `${overallProgress}%` }}></div>
             </div>
           </button>
         )}
         
-        {/* 
-         * 视图切换按钮组
-         * 功能：在网格视图和列表视图之间切换
-         * - 黄色背景：激活状态
-         * - 灰色背景：Hover 状态
-         * - border-l: 左侧分隔线
-         */}
+        {/* 语言切换按钮 */}
+        <button 
+          onClick={toggleLanguage}
+          className="flex items-center border-2 border-black px-2 py-1 hover:bg-gray-100 transition-colors"
+          title="Switch Language"
+        >
+          <span className="text-[10px] md:text-xs font-bold uppercase">
+            {i18n.language === 'zh' ? '中' : 'EN'}
+          </span>
+        </button>
+        
+        {/* 视图切换按钮组 */}
         <div className="flex border-2 border-black">
           <button onClick={() => onViewModeChange('grid')} className={`p-1 md:p-1.5 ${viewMode === 'grid' ? 'bg-yellow-400' : 'hover:bg-gray-100'}`}><Icons.Grid3x3 className="w-4 h-4" /></button>
           <button onClick={() => onViewModeChange('list')} className={`p-1 md:p-1.5 border-l-2 border-black ${viewMode === 'list' ? 'bg-yellow-400' : 'hover:bg-gray-100'}`}><Icons.List className="w-4 h-4" /></button>

@@ -10,6 +10,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../constants';
 import { DriveItem, SortKey, SortOrder } from '../types';
 import { useShareInfo, useShareFiles, mapApiItem } from '../hooks/useDriveQueries';
@@ -21,7 +22,7 @@ import { PasswordModal } from '../components/overlays/Modals';
 import { CONFIG } from '../config';
 
 export const ShareView: React.FC = () => {
-  // 1. 路由参数获取分享码
+  const { t } = useTranslation();
   const { code } = useParams<{ code: string }>();
   
   // 2. UI 交互状态
@@ -76,10 +77,10 @@ export const ShareView: React.FC = () => {
         setShowManualPassword(false);
         await refetch();
       } else {
-        alert('Invalid Password');
+        alert(t('share.invalidPassword'));
       }
     } catch (e) {
-      alert('Verification Failed');
+      alert(t('share.verificationFailed'));
     } finally {
       setIsVerifying(false);
     }
