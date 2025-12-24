@@ -16,6 +16,7 @@ import React, { useState } from "react";
 import { Icons } from "../constants";
 import { useAllShares, useShareMutations } from "../hooks/useDriveQueries";
 import { DeleteModal } from "../components/overlays/Modals";
+import { MessageBox, useMessageBox } from "../components/overlays/MessageBox";
 import { CONFIG } from "../config";
 
 interface SharesManagementViewProps {
@@ -271,6 +272,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({
 
   const { data, isLoading } = useAllShares(page, 50);
   const { deleteShare, updateShare } = useShareMutations();
+  const messageBox = useMessageBox();
 
   const shares = data?.items || [];
   const pagination = data?.pagination;
@@ -279,7 +281,9 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({
   const handleCopyLink = (code: string) => {
     const url = `${window.location.origin}/#/share/${code}`;
     navigator.clipboard.writeText(url).then(() => {
-      alert("Share link copied to clipboard!");
+      messageBox.success("Share link copied to clipboard!");
+    }).catch(() => {
+      messageBox.error("Failed to copy link to clipboard");
     });
   };
 
@@ -288,8 +292,12 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({
     if (!selectedShare) return;
     deleteShare.mutate(selectedShare.code, {
       onSuccess: () => {
+        messageBox.success("Share deleted successfully");
         setSelectedShare(null);
         setActiveModal(null);
+      },
+      onError: () => {
+        messageBox.error("Failed to delete share");
       },
     });
   };
@@ -301,8 +309,12 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({
       { code: selectedShare.code, data },
       {
         onSuccess: () => {
+          messageBox.success("Share updated successfully");
           setSelectedShare(null);
           setActiveModal(null);
+        },
+        onError: () => {
+          messageBox.error("Failed to update share");
         },
       }
     );
@@ -495,6 +507,12 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({
           onConfirm={handleConfirmDelete}
         />
       )}
+
+      {/* 消息提示 */}
+      <MessageBox
+        messages={messageBox.messages}
+        onClose={messageBox.closeMessage}
+      />
     </div>
   );
 };

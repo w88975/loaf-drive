@@ -6,7 +6,8 @@
 components/overlays/
 ├── Modals.tsx          # 各种模态框集合
 ├── PreviewModal.tsx    # 文件预览弹窗
-└── UploadPanel.tsx     # 上传队列面板
+├── UploadPanel.tsx     # 上传队列面板
+└── MessageBox.tsx      # 消息提示组件
 ```
 
 ## 设计理念
@@ -16,6 +17,7 @@ overlays 目录包含所有浮层交互组件，负责：
 - 模态框交互（确认、输入、选择）
 - 文件预览
 - 上传队列管理
+- 消息提示和通知
 
 ### 设计原则
 - **层级管理**：使用 z-index 管理浮层优先级
@@ -498,10 +500,202 @@ const statusConfig = {
 
 ---
 
+### MessageBox.tsx - 消息提示组件
+
+#### 功能概述
+轻量级的消息提示系统，用于显示操作反馈和通知信息。
+
+#### 核心特性
+1. **多种消息类型**
+   - Success: 成功操作反馈（绿色）
+   - Error: 错误提示（红色）
+   - Warning: 警告信息（黄色）
+   - Info: 一般信息（蓝色）
+
+2. **自动消失**
+   - 可配置的显示时长（默认 3 秒）
+   - 自动播放退出动画
+   - 支持手动关闭
+
+3. **动画效果**
+   - 滑入动画（从右侧进入）
+   - 滑出动画（向右侧退出）
+   - 平滑过渡效果
+
+4. **堆叠显示**
+   - 多条消息垂直堆叠
+   - 新消息在下方出现
+   - 独立的关闭逻辑
+
+#### Props 接口
+```typescript
+interface Message {
+  id: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  content: string;
+  duration?: number;  // 毫秒，0 表示不自动关闭
+}
+
+interface MessageBoxProps {
+  messages: Message[];
+  onClose: (id: string) => void;
+}
+```
+
+#### Hook 接口
+```typescript
+const useMessageBox = () => {
+  return {
+    messages: Message[],
+    showMessage: (content, type, duration) => void,
+    closeMessage: (id) => void,
+    success: (content, duration?) => void,
+    error: (content, duration?) => void,
+    info: (content, duration?) => void,
+    warning: (content, duration?) => void,
+  };
+};
+```
+
+#### 使用示例
+
+**基础使用**：
+```typescript
+import { MessageBox, useMessageBox } from '../components/overlays/MessageBox';
+
+const MyComponent = () => {
+  const messageBox = useMessageBox();
+
+  const handleAction = () => {
+    // 显示成功消息（3秒后自动关闭）
+    messageBox.success('Operation completed successfully!');
+    
+    // 显示错误消息（5秒后自动关闭）
+    messageBox.error('Something went wrong', 5000);
+    
+    // 显示警告消息
+    messageBox.warning('Please check your input');
+    
+    // 显示信息消息
+    messageBox.info('Processing your request...');
+  };
+
+  return (
+    <>
+      <button onClick={handleAction}>Do Something</button>
+      <MessageBox 
+        messages={messageBox.messages} 
+        onClose={messageBox.closeMessage} 
+      />
+    </>
+  );
+};
+```
+
+**配合异步操作**：
+```typescript
+const handleSave = async () => {
+  try {
+    await saveData();
+    messageBox.success('Data saved successfully!');
+  } catch (error) {
+    messageBox.error('Failed to save data');
+  }
+};
+```
+
+**配合 Mutation**：
+```typescript
+updateShare.mutate(data, {
+  onSuccess: () => {
+    messageBox.success('Share updated successfully');
+  },
+  onError: () => {
+    messageBox.error('Failed to update share');
+  }
+});
+```
+
+#### 消息类型配置
+
+| 类型 | 背景色 | 边框色 | 文字色 | 图标 |
+|------|--------|--------|--------|------|
+| success | green-50 | green-500 | green-700 | ✓ Check |
+| error | red-50 | red-500 | red-700 | ⚠ Alert |
+| warning | yellow-50 | yellow-500 | yellow-700 | ⚠ Alert |
+| info | blue-50 | blue-500 | blue-700 | ⓘ Alert |
+
+#### 布局结构
+```
+MessageBox (右上角悬浮, fixed, z-[200])
+└── Message * N (垂直堆叠)
+    ├── 图标（类型图标）
+    ├── 内容文本
+    └── 关闭按钮
+```
+
+#### 视觉设计
+- **位置**：固定在右上角（top-20 right-4）
+- **尺寸**：最小宽度 300px，最大宽度 400px
+- **边框**：2px 实线，颜色根据类型
+- **阴影**：4px 硬核阴影
+- **间距**：消息之间 12px 间距
+
+#### 动画效果
+**进入动画**（200ms）：
+```css
+from: { translateX: 100%, opacity: 0 }
+to: { translateX: 0, opacity: 1 }
+```
+
+**退出动画**（200ms）：
+```css
+from: { translateX: 0, opacity: 1 }
+to: { translateX: 100%, opacity: 0 }
+```
+
+#### 最佳实践
+
+1. **消息内容**
+   - 简洁明了，不超过一行
+   - 使用大写字母（符合设计风格）
+   - 明确的操作结果描述
+
+2. **显示时长**
+   - 成功消息：3 秒（默认）
+   - 错误消息：5 秒（更长时间）
+   - 警告消息：4 秒
+   - 信息消息：3 秒
+
+3. **使用场景**
+   - ✅ 替代 `alert()` 提示
+   - ✅ 异步操作反馈
+   - ✅ 表单提交结果
+   - ✅ 复制/粘贴确认
+   - ❌ 不适合长篇内容
+   - ❌ 不适合需要用户选择的场景
+
+4. **性能考虑**
+   - 同时显示不超过 3 条消息
+   - 自动清理已关闭的消息
+   - 避免频繁触发（防抖）
+
+#### 响应式设计
+**移动端**：
+- 宽度自适应，最小 280px
+- 距离右侧 16px
+
+**桌面端**：
+- 固定最小宽度 300px
+- 距离右侧 16px
+
+---
+
 ## 浮层管理
 
 ### Z-Index 层级
 ```
+z-[200] - MessageBox（最高层，不遮挡交互）
 z-[150] - PreviewModal
 z-[140] - ContextMenu
 z-[130] - Modals
