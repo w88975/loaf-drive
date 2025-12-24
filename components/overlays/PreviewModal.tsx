@@ -9,6 +9,7 @@ import { formatSize, formatDate } from "../../utils";
 import { PreviewContent } from "../preview/PreviewContent";
 import { ShareModal, ShareResultModal } from "./Modals";
 import { useCreateShare } from "../../hooks/useDriveQueries";
+import { MessageBox, useMessageBox } from "./MessageBox";
 
 interface PreviewModalProps {
   item: DriveItem;
@@ -26,6 +27,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   const [showShare, setShowShare] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const createShare = useCreateShare();
+  const messageBox = useMessageBox();
 
   const handleDownload = () => {
     if (onDownload) {
@@ -47,6 +49,17 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             {item.name}
           </h2>
           <div className="flex items-center space-x-2 md:space-x-4">
+            {/* 复制链接 */}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(item.url);
+                messageBox.success("Link copied to clipboard", 1000);
+              }}
+              className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors"
+              title="COPY LINK"
+            >
+              <Icons.Copy className="w-5 h-5" />
+            </button>
             {!isReadOnly && (
               <button
                 onClick={() => setShowShare(true)}
@@ -100,7 +113,6 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
         </div>
       </div>
-
       {!isReadOnly && showShare && (
         <ShareModal
           item={item}
@@ -118,6 +130,11 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
       {!isReadOnly && shareCode && (
         <ShareResultModal code={shareCode} onClose={() => setShareCode(null)} />
       )}
+      {/* 消息提示 */}
+      <MessageBox
+        messages={messageBox.messages}
+        onClose={messageBox.closeMessage}
+      />
     </div>
   );
 };
