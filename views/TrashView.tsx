@@ -26,9 +26,7 @@ interface TrashViewProps {
 }
 
 export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) => {
-  /**
-   * 多选状态：已选中的文件 ID 集合
-   */
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   /**
@@ -150,7 +148,7 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
       {/* 清空回收站确认模态框 */}
       {activeModal === 'clear' && (
         <DeleteModal 
-          title="Empty Trash?" 
+          title={t('trash.emptyTrashConfirm')} 
           count={items.length} 
           isPermanent={true}
           onClose={() => setActiveModal(null)} 
@@ -158,10 +156,9 @@ export const TrashView: React.FC<TrashViewProps> = ({ searchQuery, viewMode }) =
         />
       )}
       
-      {/* 永久删除确认模态框 */}
       {activeModal === 'delete-permanent' && (
         <DeleteModal 
-          title="Delete Permanently?" 
+          title={t('modal.deleteTitle')} 
           count={selectedIds.size || (targetItem ? 1 : 0)} 
           isPermanent={true}
           onClose={() => setActiveModal(null)} 

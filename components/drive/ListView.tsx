@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { DriveItem, SortKey, SortOrder } from '../../types';
 import { FileItem } from './FileItem';
 
@@ -28,6 +29,7 @@ export const ListView: React.FC<ListViewProps> = ({
   items, selectedIds, isReadOnly, onItemClick, onItemLongPress, onContextMenu, 
   onSelectAll, onSort, sortKey, sortOrder, onRename, onMove, onDelete, onShare
 }) => {
+  const { t } = useTranslation();
   const isAllSelected = items.length > 0 && selectedIds.size === items.length;
 
   return (
@@ -39,15 +41,15 @@ export const ListView: React.FC<ListViewProps> = ({
               <input type="checkbox" className="w-4 h-4 accent-yellow-400 cursor-pointer border-2 border-white" checked={isAllSelected} onChange={(e) => { e.stopPropagation(); onSelectAll(); }} onClick={(e) => e.stopPropagation()} />
             </th>
             <th onClick={() => onSort('name')} className="p-3 border-r border-white/20 w-[40%] hover:bg-gray-800 transition-colors cursor-pointer">
-              <div className="flex items-center space-x-2"><span>Name</span>{sortKey === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}</div>
+              <div className="flex items-center space-x-2"><span>{t('table.name')}</span>{sortKey === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}</div>
             </th>
             <th onClick={() => onSort('size')} className="p-3 border-r border-white/20 w-[12%] hover:bg-gray-800 transition-colors text-center cursor-pointer">
-              <div className="flex items-center justify-center space-x-2"><span>Size</span>{sortKey === 'size' && (sortOrder === 'asc' ? '↑' : '↓')}</div>
+              <div className="flex items-center justify-center space-x-2"><span>{t('table.size')}</span>{sortKey === 'size' && (sortOrder === 'asc' ? '↑' : '↓')}</div>
             </th>
             <th onClick={() => onSort('modifiedAt')} className="p-3 border-r border-white/20 w-[18%] hover:bg-gray-800 transition-colors text-center hidden sm:table-cell cursor-pointer">
-              <div className="flex items-center justify-center space-x-2"><span>Modified</span>{sortKey === 'modifiedAt' && (sortOrder === 'asc' ? '↑' : '↓')}</div>
+              <div className="flex items-center justify-center space-x-2"><span>{t('table.modified')}</span>{sortKey === 'modifiedAt' && (sortOrder === 'asc' ? '↑' : '↓')}</div>
             </th>
-            <th className="p-3 w-[25%] text-center">Options</th>
+            <th className="p-3 w-[25%] text-center">{t('table.options')}</th>
           </tr>
         </thead>
         <tbody className="text-[10px]">

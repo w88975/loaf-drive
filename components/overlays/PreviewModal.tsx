@@ -3,6 +3,7 @@
  */
 
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Icons } from "../../constants";
 import { DriveItem } from "../../types";
 import { formatSize, formatDate } from "../../utils";
@@ -24,6 +25,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
   isReadOnly = false,
   onDownload,
 }) => {
+  const { t } = useTranslation();
   const [showShare, setShowShare] = useState(false);
   const [shareCode, setShareCode] = useState<string | null>(null);
   const createShare = useCreateShare();
@@ -53,10 +55,10 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
             <button
               onClick={() => {
                 navigator.clipboard.writeText(item.url);
-                messageBox.success("Link copied to clipboard", 1000);
+                messageBox.success(t('message.linkCopiedToClipboard'), 1000);
               }}
               className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors"
-              title="COPY LINK"
+              title={t('sharesManagement.copyLinkTooltip').toUpperCase()}
             >
               <Icons.Copy className="w-5 h-5" />
             </button>
@@ -64,7 +66,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
               <button
                 onClick={() => setShowShare(true)}
                 className="p-2 bg-black text-white hover:bg-white hover:text-black border-2 border-black transition-colors"
-                title="SHARE"
+                title={t('contextMenu.share').toUpperCase()}
               >
                 <Icons.Share className="w-5 h-5" />
               </button>

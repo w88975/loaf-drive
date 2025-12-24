@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../constants';
 import { UploadTask } from '../../types';
 import { formatSize } from '../../utils';
@@ -42,7 +43,7 @@ interface UploadPanelProps {
  * - 任务列表倒序显示（最新的在上面）
  */
 export const UploadPanel: React.FC<UploadPanelProps> = ({ tasks, onClose, onCancel, onClear }) => {
-  // 计算正在上传的任务数量
+  const { t } = useTranslation();
   const activeCount = tasks.filter(t => t.status === 'uploading').length;
 
   return (
@@ -50,11 +51,10 @@ export const UploadPanel: React.FC<UploadPanelProps> = ({ tasks, onClose, onCanc
       {/* 顶部标题栏 - 黑色背景 */}
       <div className="p-3 border-b-2 border-black bg-black text-white flex justify-between items-center">
         <h3 className="text-[10px] font-bold uppercase tracking-widest italic">
-          Transfers ({tasks.length})
+          {t('upload.transfers')} ({tasks.length})
         </h3>
         <div className="flex space-x-2">
-          {/* 清空按钮 - 清除已完成和失败的任务 */}
-          <button onClick={onClear} className="p-1 hover:text-yellow-400 text-[8px] uppercase font-bold border border-white/20 px-2">Clear</button>
+          <button onClick={onClear} className="p-1 hover:text-yellow-400 text-[8px] uppercase font-bold border border-white/20 px-2">{t('upload.clear')}</button>
           {/* 关闭面板按钮 */}
           <button onClick={onClose} className="p-1 hover:text-yellow-400 transition-colors"><Icons.Close className="w-4 h-4" /></button>
         </div>
@@ -62,7 +62,7 @@ export const UploadPanel: React.FC<UploadPanelProps> = ({ tasks, onClose, onCanc
       {/* 任务列表区 - 可滚动 */}
       <div className="flex-1 overflow-y-auto bg-gray-50">
         {tasks.length === 0 ? (
-          <div className="p-8 text-center opacity-30 text-[10px] font-bold uppercase italic">Queue Empty</div>
+          <div className="p-8 text-center opacity-30 text-[10px] font-bold uppercase italic">{t('upload.queueEmpty')}</div>
         ) : (
           /* 倒序显示任务（最新的在上面） */
           tasks.slice().reverse().map(task => (
@@ -76,9 +76,8 @@ export const UploadPanel: React.FC<UploadPanelProps> = ({ tasks, onClose, onCanc
                     {task.status} • {formatSize(task.file.size)}
                   </p>
                 </div>
-                {/* 取消上传按钮（仅在上传中显示） */}
                 {task.status === 'uploading' && (
-                  <button onClick={() => onCancel(task.id)} className="text-[8px] font-bold uppercase border border-black px-1.5 py-0.5 hover:bg-black hover:text-white">Abort</button>
+                  <button onClick={() => onCancel(task.id)} className="text-[8px] font-bold uppercase border border-black px-1.5 py-0.5 hover:bg-black hover:text-white">{t('upload.abort')}</button>
                 )}
               </div>
               {/* 进度条（仅在上传中显示） */}
@@ -91,10 +90,9 @@ export const UploadPanel: React.FC<UploadPanelProps> = ({ tasks, onClose, onCanc
           ))
         )}
       </div>
-      {/* 底部活跃状态条（仅在有上传任务时显示） */}
       {activeCount > 0 && (
         <div className="p-2 bg-yellow-400 border-t-2 border-black text-[9px] font-bold uppercase text-center italic animate-pulse">
-          Processing {activeCount} File(s)
+          {t('upload.processingFiles', { count: activeCount })}
         </div>
       )}
     </div>

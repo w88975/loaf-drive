@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../../constants';
 
 /**
@@ -31,10 +32,11 @@ interface SelectionBarProps {
  * - 显示选中数量，提供移动、删除、清空操作
  */
 export const SelectionBar: React.FC<SelectionBarProps> = ({ count, onMove, onDelete, onClear }) => {
+  const { t } = useTranslation();
+  
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[80] bg-black text-white px-6 py-4 flex items-center space-x-8 shadow-[0_0_20px_rgba(0,0,0,0.4)] border-4 border-yellow-400 italic font-bold uppercase animate-in slide-in-from-bottom-full duration-200">
-      {/* 选中数量显示 */}
-      <div className="text-sm tracking-tighter"><span className="text-yellow-400">{count}</span> ITEM(S) READY</div>
+      <div className="text-sm tracking-tighter">{t('selection.itemsReady', { count })}</div>
       
       {/* 操作按钮组 */}
       <div className="flex space-x-4">
@@ -42,13 +44,13 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({ count, onMove, onDel
           onClick={(e) => { e.stopPropagation(); onMove(); }} 
           className="hover:text-yellow-400 transition-colors flex items-center space-x-2 text-xs"
         >
-          <Icons.More className="w-4 h-4" /><span>Move</span>
+          <Icons.More className="w-4 h-4" /><span>{t('contextMenu.move')}</span>
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); onDelete(); }} 
           className="hover:text-red-500 transition-colors flex items-center space-x-2 text-xs"
         >
-          <Icons.Trash className="w-4 h-4" /><span>Delete</span>
+          <Icons.Trash className="w-4 h-4" /><span>{t('contextMenu.delete')}</span>
         </button>
       </div>
       

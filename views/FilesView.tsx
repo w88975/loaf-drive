@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icons } from '../constants';
 import { DriveItem, SortKey, SortOrder } from '../types';
 import { useFiles, useDriveMutations, useCreateShare } from '../hooks/useDriveQueries';
@@ -29,6 +30,7 @@ interface FilesViewProps {
 export const FilesView: React.FC<FilesViewProps> = ({ 
   currentFolderId, setCurrentFolderId, navigationHistory, searchQuery, viewMode, onPreview, onUploadClick 
 }) => {
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
@@ -209,7 +211,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
       {activeModal === 'new-folder' && <NewFolderModal onClose={() => setActiveModal(null)} onConfirm={async (name) => { createFolder.mutate({ name, parentId: currentFolderId }); setActiveModal(null); }} />}
       {activeModal === 'rename' && targetItem && <RenameModal item={targetItem} onClose={() => setActiveModal(null)} onConfirm={async (name) => { renameItem.mutate({ id: targetItem.id, newName: name }); setActiveModal(null); }} />}
       {(activeModal === 'password-enter' || activeModal === 'password-unlock') && <PasswordModal folderName={currentFolderName} onClose={() => setActiveModal(null)} onConfirm={handlePasswordConfirm} />}
-      {activeModal === 'delete' && <DeleteModal title="Move to Trash?" count={selectedIds.size || (targetItem ? 1 : 0)} isPermanent={false} onClose={() => setActiveModal(null)} onConfirm={async () => { const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []); deleteItems.mutate(ids); setSelectedIds(new Set()); setActiveModal(null); }} />}
+      {activeModal === 'delete' && <DeleteModal title={t('modal.moveToTrash')} count={selectedIds.size || (targetItem ? 1 : 0)} isPermanent={false} onClose={() => setActiveModal(null)} onConfirm={async () => { const ids = selectedIds.size > 0 ? [...selectedIds] : (targetItem ? [targetItem.id] : []); deleteItems.mutate(ids); setSelectedIds(new Set()); setActiveModal(null); }} />}
       {activeModal === 'move' && <MoveModal count={selectedIds.size} onClose={() => setActiveModal(null)} onConfirm={async (destId) => { moveItems.mutate({ ids: [...selectedIds], targetId: destId }); setSelectedIds(new Set()); setActiveModal(null); }} />}
       {activeModal === 'share' && targetItem && <ShareModal item={targetItem} onClose={() => setActiveModal(null)} onConfirm={(data) => createShare.mutate(data, { onSuccess: (res) => { setShareCode(res.data.code); setActiveModal(null); } })} />}
       {shareCode && <ShareResultModal code={shareCode} onClose={() => setShareCode(null)} />}
@@ -227,9 +229,9 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
       {containerContextMenu && (
         <div className="fixed z-[140] w-48 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] py-1 animate-in fade-in zoom-in-95 duration-100" style={{ top: containerContextMenu.y, left: containerContextMenu.x }} onClick={e => e.stopPropagation()}>
-          <div className="px-4 py-1 border-b border-black/10 mb-1"><p className="text-[8px] text-gray-400 font-black uppercase">Directory Options</p></div>
-          <button onClick={() => { setActiveModal('new-folder'); setContainerContextMenu(null); }} className="w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-yellow-400 transition-colors flex items-center justify-between group"><span>New Folder</span><span className="text-[10px]">📁+</span></button>
-          <button onClick={() => { refetch(); setContainerContextMenu(null); }} className="w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-yellow-400 transition-colors border-t border-black/5 flex items-center justify-between group"><span>Refresh</span><span className="text-[10px]">🔄</span></button>
+          <div className="px-4 py-1 border-b border-black/10 mb-1"><p className="text-[8px] text-gray-400 font-black uppercase">{t('contextMenu.directoryOptions')}</p></div>
+          <button onClick={() => { setActiveModal('new-folder'); setContainerContextMenu(null); }} className="w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-yellow-400 transition-colors flex items-center justify-between group"><span>{t('file.newFolder')}</span><span className="text-[10px]">📁+</span></button>
+          <button onClick={() => { refetch(); setContainerContextMenu(null); }} className="w-full text-left px-4 py-2 text-[10px] font-bold uppercase hover:bg-yellow-400 transition-colors border-t border-black/5 flex items-center justify-between group"><span>{t('contextMenu.refresh')}</span><span className="text-[10px]">🔄</span></button>
         </div>
       )}
 
