@@ -24,6 +24,7 @@ components/
     ├── ImageViewer.tsx         # 图片查看器
     ├── VideoViewer.tsx         # 视频播放器
     ├── AudioViewer.tsx         # 音频播放器
+    ├── PDFViewer.tsx           # PDF文档查看器
     ├── TextViewer.tsx          # 代码/文本查看器
     └── UnsupportedViewer.tsx   # 不支持格式的兜底组件
 ```
@@ -109,6 +110,7 @@ components/
 - **ImageViewer**：图片查看器
 - **VideoViewer**：HTML5 视频播放器
 - **AudioViewer**：音频播放器，带旋转唱片动画
+- **PDFViewer**：PDF文档查看器，浏览器原生支持
 - **TextViewer**：代码高亮查看器，集成 highlight.js
 - **UnsupportedViewer**：不支持格式的兜底展示
 

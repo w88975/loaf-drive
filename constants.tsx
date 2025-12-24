@@ -32,7 +32,8 @@ import {
   Move,
   AlertCircle,
   Check,
-  Loader2
+  Loader2,
+  FileType
 } from 'lucide-react';
 
 /**
@@ -61,7 +62,7 @@ export const Icons = {
   Video,
   Audio: Music,
   Code: Code2,
-  Pdf: FileText,
+  Pdf: FileType,
   Archive,
   Plus,
   Trash: Trash2,

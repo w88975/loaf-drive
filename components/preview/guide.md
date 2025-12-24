@@ -9,6 +9,7 @@ components/preview/
 ├── VideoViewer.tsx         # 视频播放器
 ├── AudioViewer.tsx         # 音频播放器
 ├── TextViewer.tsx          # 代码/文本查看器
+├── PDFViewer.tsx           # PDF文档查看器
 └── UnsupportedViewer.tsx   # 不支持格式的兜底组件
 ```
 
@@ -17,7 +18,7 @@ components/preview/
 ### 职责定位
 preview 目录包含所有文件预览器组件，负责：
 - 根据文件类型选择合适的查看器
-- 提供多种文件格式的预览能力
+- 提供多种文件格式的预览能力（图片、视频、音频、文本、PDF等）
 - 不支持的格式提供下载或文本查看兜底
 
 ### 设计模式
@@ -70,9 +71,9 @@ const PreviewContent: React.FC<PreviewContentProps> = ({ item }) => {
     return <TextViewer item={item} />;
   }
   
-  // 5. PDF（未来可扩展）
+  // 5. PDF文档
   if (mimeType === 'application/pdf' || extension === 'pdf') {
-    return <TextViewer item={item} forceText />;  // 暂时用文本查看器
+    return <PDFViewer item={item} />;
   }
   
   // 6. 不支持的格式
@@ -286,6 +287,60 @@ const AudioViewer: React.FC<AudioViewerProps> = ({ item }) => {
 
 ---
 
+### PDFViewer.tsx - PDF文档查看器
+
+#### 功能特性
+- 浏览器原生PDF查看
+- 无需额外依赖
+- 支持缩放、搜索、打印
+- 完整PDF功能支持
+
+#### Props 接口
+```typescript
+interface PDFViewerProps {
+  item: DriveItem
+}
+```
+
+#### 实现要点
+```typescript
+const PDFViewer: React.FC<PDFViewerProps> = ({ item }) => {
+  return (
+    <div className="flex items-center justify-center h-full w-full p-4">
+      <iframe
+        src={item.url}
+        title={item.name}
+        className="w-full h-full border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+      />
+    </div>
+  );
+};
+```
+
+#### 技术方案
+- **iframe嵌入**：使用iframe加载PDF文件
+- **浏览器原生**：利用浏览器内置PDF查看器
+- **零依赖**：不需要pdf.js等第三方库
+- **全功能**：支持所有浏览器原生功能
+
+#### 优势
+- ✅ 零额外依赖，打包体积小
+- ✅ 所有现代浏览器内置支持
+- ✅ 完整的PDF交互功能
+- ✅ 性能优秀，渲染快速
+
+#### 注意事项
+- ⚠️ 需要正确的CORS头配置
+- ⚠️ 需要允许iframe嵌入（X-Frame-Options）
+- ⚠️ 部分旧版浏览器可能不支持
+
+#### 样式特性
+- **极客新丑风**：黑色粗边框 + 硬核阴影
+- **全屏显示**：充分利用预览空间
+- **响应式**：自适应窗口大小
+
+---
+
 ### TextViewer.tsx - 代码/文本查看器
 
 #### 功能特性
@@ -485,11 +540,12 @@ const UnsupportedViewer: React.FC<UnsupportedViewerProps> = ({ item }) => {
   ↓
 PreviewContent 分发器
   ↓
-检查 MIME 类型
+检查 MIME 类型 / 扩展名
   ├─ image/* → ImageViewer
   ├─ video/* → VideoViewer
   ├─ audio/* → AudioViewer
   ├─ text/*  → TextViewer
+  ├─ .pdf    → PDFViewer
   └─ 其他
        ↓
     检查扩展名
@@ -555,7 +611,7 @@ PreviewContent 分发器
 4. 测试预览效果
 
 ### 集成第三方库
-- **PDF 预览**：pdf.js
+- **PDF 预览**：已实现（浏览器原生支持）
 - **Office 文档**：Office Online Viewer API
 - **3D 模型**：Three.js
 - **Markdown**：marked + highlight.js

@@ -68,7 +68,7 @@ pnpm add lucide-react
 |------------|-------------|------|
 | Audio | Music | 音频图标 |
 | Code | Code2 | 代码图标 |
-| Pdf | FileText | PDF/文本图标 |
+| Pdf | FileType | PDF文档图标 |
 | Trash | Trash2 | 垃圾桶图标 |
 | Close | X | 关闭图标 |
 | Grid | Loader2 | 加载动画（旋转） |
@@ -303,6 +303,12 @@ lucide-react 组件支持标准 SVG 属性：
 ---
 
 ## 更新日志
+
+### 2024-12-24 (最新)
+- ✨ 更新PDF图标：FileText → FileType
+- 🎨 新增PDF预览组件（PDFViewer.tsx）
+- 📝 完善预览系统文档
+- ✅ 构建测试通过
 
 ### 2024-12-24
 - ✨ 完成图标系统迁移到 lucide-react

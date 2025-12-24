@@ -81,7 +81,7 @@ Icons.Image         // 图片文件
 Icons.Video         // 视频文件
 Icons.Audio         // 音频文件 (Music)
 Icons.Code          // 代码文件 (Code2)
-Icons.Pdf           // PDF 文件 (FileText)
+Icons.Pdf           // PDF 文件 (FileType)
 Icons.Archive       // 压缩包
 ```
 
@@ -174,7 +174,7 @@ const getFileIcon = (mimeType: string) => {
 |------------|------------------|------|
 | Audio | Music | 音乐/音频图标 |
 | Code | Code2 | 代码文件图标 |
-| Pdf | FileText | 文本/PDF 文件图标 |
+| Pdf | FileType | PDF文档图标 |
 | Trash | Trash2 | 垃圾桶图标 |
 | Close | X | 关闭/删除图标 |
 | Grid | Loader2 | 加载动画（旋转） |
@@ -395,7 +395,12 @@ export const Icons = {
 
 ## 更新日志
 
-### 2024-12 (当前版本)
+### 2024-12-24 (当前版本)
+- ✨ 更新PDF图标为 FileType（更专业的文档图标）
+- ✨ 新增PDF预览功能支持
+- 📝 更新相关文档
+
+### 2024-12
 - ✨ 全面迁移到 lucide-react 图标库
 - ✨ 添加 30+ 常用图标
 - 📝 完善图标使用文档

@@ -81,10 +81,11 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 ### 👁️ 多媒体预览类 (components/preview/)
 | 文件名 | 预览类型 | 技术实现 |
 | :--- | :--- | :--- |
-| **PreviewContent.tsx** | 策略分发器 | 根据 MIME 类型或后缀名自动匹配渲染器；支持“强制以文本模式打开”。 |
+| **PreviewContent.tsx** | 策略分发器 | 根据 MIME 类型或后缀名自动匹配渲染器；支持"强制以文本模式打开"。 |
 | **ImageViewer.tsx** | 图片查看器 | 带有黑色阴影装饰的响应式图像渲染。 |
 | **VideoViewer.tsx** | 视频播放器 | 原生 HTML5 Video 集成；支持自动播放。 |
 | **AudioViewer.tsx** | 音频播放器 | 实现 **旋转唱片动画** 视觉效果；黑色风格音频控制器。 |
+| **PDFViewer.tsx** | PDF查看器 | 使用浏览器原生 PDF 支持；零依赖 iframe 方案；支持缩放、搜索、打印等完整功能。 |
 | **TextViewer.tsx** | 代码查看器 | 集成 `highlight.js`；通过 API 获取原始内容；支持自动识别编程语言并高亮。 |
 | **UnsupportedViewer.tsx** | 兜底界面 | 针对未知格式提供下载入口或尝试文本解析。 |
 
