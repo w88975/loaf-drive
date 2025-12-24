@@ -467,58 +467,63 @@ const language = languageMap[item.extension] || item.extension;
 #### 功能特性
 - 显示不支持提示
 - 提供下载按钮
-- 提供"尝试文本查看"选项
+- 提供"尝试文本查看"选项（限制5MB以下）
+- 大文件自动禁用文本查看并提示
 - 显示文件元信息
 
 #### Props 接口
 ```typescript
 interface UnsupportedViewerProps {
   item: DriveItem
+  onOpenAsText: () => void  // 强制打开文本查看器的回调
 }
 ```
 
 #### 实现要点
 ```typescript
-const UnsupportedViewer: React.FC<UnsupportedViewerProps> = ({ item }) => {
-  const [tryText, setTryText] = useState(false);
-  
-  if (tryText) {
-    return <TextViewer item={item} forceText />;
-  }
+const UnsupportedViewer: React.FC<UnsupportedViewerProps> = ({ item, onOpenAsText }) => {
+  // 文件大小限制：5MB
+  const MAX_TEXT_VIEW_SIZE = 5 * 1024 * 1024;
+  const fileSize = item.size || 0;
+  const isTooLarge = fileSize > MAX_TEXT_VIEW_SIZE;
   
   return (
     <div className="unsupported-viewer">
       <div className="icon">
-        <Icons.File className="w-24 h-24" />
+        <Icons.File className="w-24 h-24 opacity-20" />
       </div>
       
-      <h3 className="font-bold text-xl">Preview Not Available</h3>
-      <p className="text-gray-600">
-        This file type is not supported for preview
+      <h3 className="font-bold text-xl uppercase italic">Preview Not Available</h3>
+      <p className="text-gray-500 text-xs uppercase font-bold">
+        We don't support previewing .{item.extension} files yet.
       </p>
       
-      <div className="file-info">
-        <p><strong>Name:</strong> {item.name}</p>
-        <p><strong>Type:</strong> {item.mimeType || 'Unknown'}</p>
-        <p><strong>Size:</strong> {formatSize(item.size)}</p>
-      </div>
-      
-      <div className="actions">
+      <div className="actions-container">
+        {/* 尝试文本查看按钮 - 大于5MB时禁用 */}
+        <button 
+          onClick={onOpenAsText}
+          disabled={isTooLarge}
+          className="btn-secondary disabled:opacity-30 disabled:cursor-not-allowed"
+          title={isTooLarge ? 'File too large for text preview (max 5MB)' : 'Try opening as text'}
+        >
+          Try opening as text
+        </button>
+        
+        {/* 下载按钮 */}
         <a 
           href={item.url} 
           download={item.name}
           className="btn-primary"
         >
-          <Icons.Download />
           Download File
         </a>
         
-        <button 
-          onClick={() => setTryText(true)}
-          className="btn-secondary"
-        >
-          Try Text View
-        </button>
+        {/* 大文件警告提示 */}
+        {isTooLarge && (
+          <p className="text-red-500 text-xs font-bold uppercase">
+            ⚠ File exceeds 5MB limit for text preview
+          </p>
+        )}
       </div>
     </div>
   );
@@ -527,9 +532,23 @@ const UnsupportedViewer: React.FC<UnsupportedViewerProps> = ({ item }) => {
 
 #### 兜底策略
 1. 显示不支持提示
-2. 提供下载选项
-3. 提供文本查看尝试
-4. 显示文件基本信息
+2. 提供下载选项（始终可用）
+3. 提供文本查看尝试（仅限5MB以下文件）
+4. 大文件显示警告提示
+5. 禁用状态有明确的视觉反馈
+
+#### 文件大小限制
+- **5MB限制**：超过5MB的文件不允许尝试文本查看
+- **原因**：
+  - 防止浏览器性能问题
+  - 避免内存占用过大
+  - 避免渲染阻塞
+  - 大文本文件应下载后用专业工具查看
+- **用户反馈**：
+  - 按钮禁用（灰色，30%透明度）
+  - 鼠标变为禁用光标（not-allowed）
+  - Hover时显示tooltip说明原因
+  - 下方显示红色警告文字
 
 ---
 
@@ -562,6 +581,7 @@ PreviewContent 分发器
 - 音频：使用流式播放
 - 文本：限制显示前 100KB，提供"查看更多"
 - 图片：使用预览图，点击查看原图
+- **不支持格式**：超过5MB禁止尝试文本查看（UnsupportedViewer）
 
 ### 懒加载
 - 图片：Intersection Observer 延迟加载
@@ -635,8 +655,11 @@ PreviewContent 分发器
 ### 性能警告
 - 大图片可能占用大量内存
 - 4K 视频可能卡顿
-- 大文本文件可能阻塞渲染
+- 大文本文件可能阻塞渲染（已限制5MB以下）
 - 语法高亮可能耗时
+- **安全阈值**：
+  - 文本查看：最大5MB（UnsupportedViewer限制）
+  - 建议对所有大文件使用下载而非在线预览
 
 ### 移动端适配
 - 触摸手势支持
