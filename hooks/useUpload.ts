@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { UploadTask } from '../types';
 import { driveApi } from '../api/drive';
 import { generateId, getVideoFramesWeb, getImageThumbnailWeb, dataURItoBlob } from '../utils';
+import { authManager } from '../auth';
 
 const CHUNK_SIZE = 10 * 1024 * 1024;
 const CHUNKED_THRESHOLD = 100 * 1024 * 1024;
@@ -185,6 +186,15 @@ export const useUpload = () => {
 
         const xhr = new XMLHttpRequest();
         xhr.open('POST', driveApi.getUploadUrl());
+
+        /**
+         * 添加 API Key 认证头
+         * 所有上传请求都需要认证
+         */
+        const apiKey = authManager.getApiKey();
+        if (apiKey) {
+          xhr.setRequestHeader('x-api-key', apiKey);
+        }
 
         /**
          * 监听上传进度事件

@@ -144,6 +144,10 @@
   - API Key 保存在 localStorage
   - 每个请求自动在 Header 中携带 `x-api-key`
   - 401 错误自动清除 API Key 并跳转登录页
+  - **上传鉴权**：
+    - 小文件直接上传：通过 `xhr.setRequestHeader('x-api-key', apiKey)` 手动添加
+    - 大文件分片上传：通过 `apiFetch` 自动添加
+    - 预览图上传：通过 `apiFetch` 自动添加
 - **文件夹密码**：
   - 密码缓存在 localStorage，永久保存
   - 不会自动过期，方便用户重复访问

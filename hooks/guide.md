@@ -314,11 +314,16 @@ const useUpload = () => {
   - 图片：150x150 缩略图
     ↓
 上传主体 (uploading)
-  - 小文件：直接上传 + XHR 进度
-  - 大文件：分片上传（10MB/片）
+  - 小文件：直接上传 + XHR 进度（携带 x-api-key）
+  - 大文件：分片上传（10MB/片，通过 apiFetch 自动鉴权）
     ↓
 完成 (completed)
 ```
+
+**注意**：所有上传请求都需要 API Key 认证
+- 小文件直接上传：通过 `xhr.setRequestHeader('x-api-key', apiKey)` 添加
+- 大文件分片上传：通过 `apiFetch` 自动添加
+- 预览图上传：通过 `driveApi.uploadPreview` (apiFetch) 自动添加
 
 **4. 预览图生成**
 - **视频处理**：
@@ -357,6 +362,32 @@ const useUpload = () => {
 **文件夹串行**：
 - 必须先创建父文件夹获取 ID
 - 子项目可并发处理
+
+#### 鉴权处理
+
+**所有上传都需要 API Key 认证**：
+
+1. **小文件直接上传**（使用 XMLHttpRequest）：
+   ```typescript
+   const xhr = new XMLHttpRequest();
+   xhr.open('POST', uploadUrl);
+   
+   // 手动添加 API Key header
+   const apiKey = authManager.getApiKey();
+   if (apiKey) {
+     xhr.setRequestHeader('x-api-key', apiKey);
+   }
+   
+   xhr.send(formData);
+   ```
+
+2. **大文件分片上传**（使用 apiFetch）：
+   - `uploadInit`、`uploadPart`、`uploadComplete` 均通过 `apiFetch` 调用
+   - `apiFetch` 会自动添加 `x-api-key` header
+
+3. **预览图上传**（使用 apiFetch）：
+   - `uploadPreview` 通过 `apiFetch` 调用
+   - 自动添加 `x-api-key` header
 
 #### 进度计算
 

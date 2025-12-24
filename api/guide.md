@@ -257,11 +257,22 @@ await driveApi.updateShare(shareCode, {
   - `file`: Blob 对象（Canvas 生成的图片）
 - **用途**：上传视频截帧或图片缩略图
 - **返回**：预览图的 R2 key
+- **鉴权**：通过 `apiFetch` 自动添加 `x-api-key`
 
 **getUploadUrl()**
 - **功能**：返回上传接口 URL
 - **用途**：用于构造 XHR 请求
 - **注意**：返回的是字符串，不是 Promise
+- **重要**：使用此 URL 时必须手动添加 `x-api-key` header
+  ```typescript
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', driveApi.getUploadUrl());
+  const apiKey = authManager.getApiKey();
+  if (apiKey) {
+    xhr.setRequestHeader('x-api-key', apiKey);
+  }
+  xhr.send(formData);
+  ```
 
 **uploadInit()** - 分片上传初始化
 - **功能**：创建分片上传会话
@@ -283,6 +294,7 @@ await driveApi.updateShare(shareCode, {
     filename: string
   }
   ```
+- **鉴权**：通过 `apiFetch` 自动添加 `x-api-key`
 
 **uploadPart()** - 上传单个分片
 - **功能**：上传文件的一个分片
@@ -293,6 +305,7 @@ await driveApi.updateShare(shareCode, {
   - `partNumber`: 分片序号（从 1 开始）
 - **返回**：`{ partNumber, etag }`
 - **注意**：ETag 用于最终合并分片
+- **鉴权**：通过 `apiFetch` 自动添加 `x-api-key`
 
 **uploadComplete()** - 完成分片上传
 - **功能**：通知后端合并所有分片
@@ -307,6 +320,7 @@ await driveApi.updateShare(shareCode, {
   }
   ```
 - **返回**：完整的文件记录 `ApiFileItem`
+- **鉴权**：通过 `apiFetch` 自动添加 `x-api-key`
 
 ## 使用规范
 
