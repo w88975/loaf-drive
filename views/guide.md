@@ -307,7 +307,8 @@ FilesView
 3. **只读预览**
    - 支持文件预览
    - 预览窗口不支持分享（避免二次分享）
-   - 下载文件时自动携带访问令牌
+   - 直接使用R2原始链接下载（浏览器原生下载）
+   - 无需中间服务器转发，速度更快
 
 4. **访问统计**
    - 显示浏览次数
@@ -324,7 +325,6 @@ FilesView
 - `showManualPassword`: 是否显示密码输入框
 - `accessToken`: 访问令牌（密码验证后获取）
 - `isVerifying`: 密码验证中
-- `isDownloading`: 文件下载中
 
 **服务端状态**：
 - 通过 `useShareInfo(code)` 获取分享基础信息
@@ -348,29 +348,21 @@ handlePasswordConfirm(password: string) {
 }
 ```
 
-**文件下载流程**（带认证）：
+**文件下载流程**（直接使用R2链接）：
 ```typescript
-handleDownload(fileId: string, filename: string) {
-  // 使用自定义下载函数，携带访问令牌
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers['x-share-token'] = accessToken;
-  }
-  
-  // 调用分享下载接口
-  const response = await fetch(
-    `${API_HOST}/api/shares/${code}/download/${fileId}`, 
-    { headers }
-  );
-  
-  // Blob 下载
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-}
+// 单文件展示页面的下载按钮
+<a 
+  href={mapApiItem(shareContent.file).url}
+  download={shareContent.file.filename}
+  className="..."
+>
+  Download
+</a>
+
+// 说明：
+// - 直接使用R2原始链接，不需要fetch blob
+// - 浏览器原生下载，支持断点续传
+// - 更快速、更可靠、更节省内存
 ```
 
 **只读预览**：
@@ -380,7 +372,7 @@ handleDownload(fileId: string, filename: string) {
     item={previewItem} 
     onClose={() => setPreviewItem(null)}
     isReadOnly={true}              // 隐藏分享按钮
-    onDownload={handleDownload}    // 自定义下载（携带令牌）
+    // 不传递 onDownload，使用默认的a标签下载（R2直链）
   />
 )}
 ```
@@ -420,7 +412,7 @@ ShareView
 │   ├── 单文件视图
 │   │   ├── 文件信息卡片
 │   │   ├── Preview 按钮
-│   │   └── Download 按钮
+│   │   └── Download 链接（a标签 + R2直链）
 │   └── 受限访问提示（需要密码）
 ├── Footer（版权信息）
 └── 弹窗层
@@ -445,6 +437,11 @@ ShareView
    - 不能访问主应用的 API
    - 权限严格限制在分享范围内
 
+4. **下载安全**
+   - 使用R2公开签名URL直接下载
+   - 无需经过API服务器中转
+   - 减少服务器负载和带宽消耗
+
 #### 使用限制
 
 **不支持的功能**（只读模式）：
@@ -460,7 +457,7 @@ ShareView
 - ✅ 浏览文件列表
 - ✅ 浏览子文件夹
 - ✅ 预览文件
-- ✅ 下载文件
+- ✅ 下载文件（直接使用R2链接）
 - ✅ 排序和切换视图
 
 ---

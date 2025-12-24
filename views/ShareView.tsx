@@ -34,7 +34,6 @@ export const ShareView: React.FC = () => {
   const [navigationStack, setNavigationStack] = useState<{id: string, name: string}[]>([]);
   const [showManualPassword, setShowManualPassword] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // 3. 数据查询：先获取分享的基础信息（判断是否有密码）
   const { data: shareInfo, isLoading: infoLoading, error: infoError } = useShareInfo(code || '');
@@ -86,41 +85,7 @@ export const ShareView: React.FC = () => {
     }
   };
 
-  // 8. 处理文件下载
-  const handleDownload = async (fileId: string, filename: string) => {
-    if (!code) return;
-    setIsDownloading(true);
-    try {
-      const headers: Record<string, string> = {};
-      if (accessToken) {
-        headers['x-share-token'] = accessToken;
-      }
-      
-      const response = await fetch(`${CONFIG.API_HOST}/api/shares/${code}/download/${fileId}`, {
-        headers
-      });
-      
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (e) {
-      alert('Download failed');
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // 9. 排序逻辑
+  // 8. 排序逻辑
   const sortedItems = useMemo(() => {
     const items = shareContent?.items || [];
     return [...items].map(mapApiItem).sort((a, b) => {
@@ -136,8 +101,7 @@ export const ShareView: React.FC = () => {
     });
   }, [shareContent, sortKey, sortOrder]);
 
-  // 10. 异常状态处理 (403 触发密码框)
-  // 增加 showManualPassword 状态控制，避免 refetch 瞬间由于旧错误导致的闪烁
+  // 9. 异常状态处理 (403 触发密码框)
   const needsPassword = (contentError as any)?.code === 403 || showManualPassword;
 
   if (infoLoading) {
@@ -270,13 +234,13 @@ export const ShareView: React.FC = () => {
               >
                 Preview
               </button>
-              <button 
-                onClick={() => handleDownload(shareContent.file.id, shareContent.file.filename)}
-                disabled={isDownloading}
-                className="flex-1 sm:px-12 py-3 border-4 border-black font-bold uppercase hover:bg-yellow-400 transition-all text-center disabled:opacity-50 disabled:cursor-not-allowed"
+              <a 
+                href={mapApiItem(shareContent.file).url}
+                download={shareContent.file.filename}
+                className="flex-1 sm:px-12 py-3 border-4 border-black font-bold uppercase hover:bg-yellow-400 transition-all text-center inline-flex items-center justify-center"
               >
-                {isDownloading ? 'Downloading...' : 'Download'}
-              </button>
+                Download
+              </a>
             </div>
           </div>
         ) : needsPassword ? (
@@ -309,7 +273,6 @@ export const ShareView: React.FC = () => {
           item={previewItem} 
           onClose={() => setPreviewItem(null)}
           isReadOnly={true}
-          onDownload={handleDownload}
         />
       )}
 
