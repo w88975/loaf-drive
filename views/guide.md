@@ -468,7 +468,7 @@ ShareView
 ### SharesManagementView.tsx - 分享管理视图
 
 #### 功能概述
-管理所有创建的分享链接，提供集中的分享管理界面。
+管理所有创建的分享链接，提供集中的分享管理界面。完整的分享生命周期管理。
 
 #### 核心特性
 1. **分享列表**
@@ -476,8 +476,19 @@ ShareView
    - 显示分享码、访问次数、过期时间
    - 显示文件/文件夹名称
    - 显示密码保护状态
+   - 显示过期状态（红色标记已过期）
+   - 显示访问限制（已访问/最大访问次数或无限）
 
-2. **取消分享**
+2. **编辑分享**
+   - 修改分享密码
+   - 更新过期时间
+   - 调整访问次数限制
+   - 移除密码保护
+   - 移除过期时间
+   - 移除访问限制
+   - 实时预览当前统计数据
+
+3. **取消分享**
    - 删除分享链接
    - 删除确认提示
 
@@ -493,11 +504,22 @@ ShareView
 
 **UI 状态**：
 - `page`: 当前页码
-- `selectedShare`: 选中要删除的分享
-- `activeModal`: 当前显示的模态框
+- `selectedShare`: 当前选中的分享
+- `activeModal`: 当前显示的模态框（'delete' | 'edit'）
+
+**EditShareModal 状态**：
+- `password`: 密码值
+- `showPassword`: 是否显示密码
+- `passwordChanged`: 密码是否被修改
+- `expiresAt`: 过期时间
+- `maxViews`: 最大访问次数
+- `removePassword`: 是否移除密码
+- `removeExpiry`: 是否移除过期时间
+- `removeMaxViews`: 是否移除访问限制
 
 **服务端状态**：
 - 通过 `useAllShares(page, limit)` 获取分享列表
+- 通过 `useShareMutations()` 获取更新和删除方法
 - 自动缓存和刷新
 
 #### 关键逻辑
@@ -512,12 +534,31 @@ handleCopyLink(code: string) {
 }
 ```
 
+**编辑分享**：
+```typescript
+handleConfirmEdit(data: any) {
+  updateShare.mutate(
+    { code: selectedShare.code, data },
+    {
+      onSuccess: () => {
+        setSelectedShare(null);
+        setActiveModal(null);
+      }
+    }
+  );
+}
+```
+
+**编辑提交逻辑**：
+- 密码：移除（null）、修改（新值）或保持不变（不传）
+- 过期时间：移除（null）、修改（新值）或保持不变（不传）
+- 访问次数：移除（null）、修改（新值）或保持不变（不传）
+
 **删除分享**：
 ```typescript
 handleConfirmDelete() {
   deleteShare.mutate(selectedShare.code, {
     onSuccess: () => {
-      // 刷新列表
       setSelectedShare(null);
       setActiveModal(null);
     }
@@ -530,11 +571,12 @@ handleConfirmDelete() {
 每个分享项显示：
 - 📁 文件/文件夹名称
 - 🔒 密码保护标识（如果有）
-- 分享码（10 位字符）
-- 访问统计（已访问/最大访问次数）
-- 过期时间（如果设置）
+- 分享码（10 位字符，带背景高亮）
+- 👁️ 访问统计（已访问/最大访问次数或∞）
+- ⚠️ 过期时间（如果设置，过期显示为红色）
+- ✅ "Never Expires"（如果未设置过期时间）
 - 创建时间
-- 操作按钮（复制链接、删除）
+- 操作按钮（复制链接、编辑、删除）
 
 #### 组件树结构
 
@@ -547,22 +589,50 @@ SharesManagementView
 │   └── ShareCard * N
 │       ├── 文件信息
 │       │   ├── 图标 + 文件名
-│       │   └── 密码标识
+│       │   └── 密码标识（黄色徽章）
 │       ├── 统计信息
-│       │   ├── 分享码
-│       │   ├── 访问次数
-│       │   └── 过期时间
+│       │   ├── 分享码（灰色背景）
+│       │   ├── 访问次数（眼睛图标 + 数字/∞）
+│       │   ├── 过期时间（警告图标，过期为红色）
+│       │   └── "Never Expires"（绿色，未设置时）
+│       ├── 创建时间
 │       └── 操作按钮
-│           ├── 复制链接按钮
-│           └── 删除按钮
+│           ├── 复制链接（Copy 图标）
+│           ├── 编辑（Edit 图标，蓝色 hover）
+│           └── 删除（Trash 图标，红色 hover）
 ├── 分页控制
 │   ├── Previous 按钮
 │   ├── 页码显示
 │   └── Next 按钮
-└── 删除确认模态框
+└── 模态框
+    ├── EditShareModal（编辑分享）
+    │   ├── Header（黑底黄字）
+    │   │   ├── "Edit Share"
+    │   │   └── 分享码
+    │   ├── Content
+    │   │   ├── 密码字段
+    │   │   │   ├── 输入框（显示/隐藏切换）
+    │   │   │   ├── 移除按钮
+    │   │   │   └── 移除提示
+    │   │   ├── 过期时间字段
+    │   │   │   ├── datetime-local 输入
+    │   │   │   ├── 移除按钮
+    │   │   │   └── 移除提示
+    │   │   ├── 访问次数字段
+    │   │   │   ├── number 输入
+    │   │   │   ├── 移除按钮
+    │   │   │   └── 移除提示
+    │   │   └── 当前统计
+    │   │       ├── 已访问次数
+    │   │       └── 创建时间
+    │   └── Footer
+    │       ├── Cancel
+    │       └── Save Changes
+    └── DeleteModal（删除确认）
 ```
 
 #### 使用的子组件
+- `EditShareModal`: 编辑分享模态框（内联组件）
 - `DeleteModal`: 删除确认模态框
 
 #### 视觉设计
@@ -694,7 +764,8 @@ TrashView
 | 排序 | - | ✅ | ✅ | ❌ | ✅ |
 | 搜索 | - | ✅ | ❌ | ❌ | ✅ |
 | 上传 | - | ✅ | ❌ | ❌ | ❌ |
-| 分享管理 | - | ✅（创建） | ❌ | ✅（管理） | ❌ |
+| 分享管理 | - | ✅（创建） | ❌ | ✅（完整管理） | ❌ |
+| 编辑分享 | - | - | - | ✅（密码/过期/限制） | - |
 | 复制链接 | - | - | - | ✅ | - |
 | 分页 | - | - | - | ✅ | - |
 | API Key 输入 | ✅ | - | - | - | - |
