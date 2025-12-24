@@ -11,8 +11,10 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 *   **硬核线条**：大量使用 `4px` 黑色实线边框和 `8px` 的复古阴影，营造出早期计算机说明书或工业控制台的视觉冲击力。
 *   **兼容性**：
     *   **响应式**：完美适配从 320px 到 4K 屏幕。
+    *   **移动端优化**：禁止页面缩放，提供原生应用体验。
     *   **浏览器**：兼容所有支持 WebKit Directory API 的现代浏览器。
     *   **离线友好**：所有多媒体处理（视频截图、图片缩略图）均在客户端 Web Worker/Canvas 环境完成，不占用服务端算力。
+    *   **PWA 支持**：Service Worker 缓存策略，支持离线访问。
 
 ---
 
@@ -41,7 +43,7 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 ### 🛠️ 核心基础类
 | 文件名 | 实现功能 | 核心细节 |
 | :--- | :--- | :--- |
-| **index.tsx** | 应用入口 | 配置 `QueryClient` 缓存策略；初始化 `HashRouter`；挂载 React 根节点。 |
+| **index.tsx** | 应用入口 | 配置 `QueryClient` 缓存策略；初始化 `HashRouter`；挂载 React 根节点；导入 Tailwind CSS 样式。 |
 | **App.tsx** | 核心路由与容器 | 负责全局布局；管理导航路径状态 (`path`)；实现全局拖拽上传监听容器；集成 `useUpload` 状态。 |
 | **types.ts** | 类型系统 | 定义 `DriveItem`（文件/文件夹统一模型）、`UploadTask`、`SortKey` 等核心接口。 |
 | **utils.ts** | 客户端处理中心 | 实现 `getVideoFramesWeb`（客户端离线视频截图）；`getImageThumbnailWeb`（150x150 缩略图生成）；文件分类算法。 |
@@ -113,7 +115,7 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 | **@tanstack/react-query** | ^5.66.0 | 服务端状态管理与缓存 |
 | **lucide-react** | ^0.562.0 | 现代图标库（1000+ 图标） |
 | **highlight.js** | ^11.9.0 | 代码语法高亮 |
-| **tailwindcss** | ^3.4.1 | 原子化 CSS 框架 |
+| **tailwindcss** | ^3.4.1 | 原子化 CSS 框架（本地化） |
 | **typescript** | ^5.3.3 | 类型系统 |
 | **vite** | ^5.1.4 | 构建工具 |
 
@@ -123,6 +125,55 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 - **按需引入**: 支持 Tree-shaking，只打包使用的图标
 - **高度可定制**: 支持 size、color、strokeWidth 等属性
 - **30+ 常用图标**: 涵盖文件类型、操作、导航、状态等场景
+
+### 本地化资源
+
+- **字体文件**: Inter、JetBrains Mono（可变字体，总计 ~430KB）
+- **CSS 资源**: Highlight.js 代码高亮样式
+- **无 CDN 依赖**: 所有资源本地化，提升加载速度和离线可用性
+
+### Service Worker 缓存
+
+- **静态资源**: Cache First 策略（HTML/JS/CSS/字体）
+- **API 请求**: Network First 策略（优先网络，失败降级缓存）
+- **离线支持**: 首次加载后可离线访问应用界面
+- **版本管理**: 自动清理旧版本缓存
+
+---
+
+## 🚀 6. 构建与部署
+
+### 快速开始
+
+```bash
+# 安装依赖
+pnpm install
+
+# 开发模式
+pnpm dev
+
+# 生产构建
+pnpm build
+
+# 预览构建结果
+pnpm preview
+```
+
+### 构建优化
+
+- **代码分割**: Vendor chunk 分离第三方库
+- **Tree Shaking**: 移除未使用的代码
+- **资源压缩**: Terser + cssnano
+- **资源哈希化**: 长期缓存优化
+- **Gzip 压缩**: 生产环境自动启用
+
+### 部署要求
+
+- **HTTPS**: Service Worker 必需（localhost 除外）
+- **静态托管**: 支持 SPA 路由（HashRouter 无需特殊配置）
+- **推荐平台**: Cloudflare Pages、Vercel、Netlify
+
+详细构建和部署指南请参考 [BUILD.md](./BUILD.md)
 
 ---
 *GeekDrive - Minimalist. Powerful. Secure.*

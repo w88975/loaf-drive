@@ -34,6 +34,7 @@
   - 配置 TanStack Query 缓存策略（5分钟 staleTime）
   - 使用 HashRouter 实现客户端路由
   - React 18 并发模式启动
+  - 导入 Tailwind CSS 样式（本地化）
 
 ### App.tsx - 根组件
 - **功能**：全局状态管理、路由配置和认证守卫
@@ -109,6 +110,15 @@
 2. **并发上传**：多文件同时上传，充分利用带宽
 3. **分片上传**：大文件（>100MB）自动分片，提高可靠性
 4. **智能缓存**：TanStack Query 自动缓存和失效管理
+5. **Service Worker 缓存**：
+   - 静态资源（HTML/JS/CSS/字体）使用 Cache First 策略
+   - API 请求使用 Network First 策略
+   - 离线时优雅降级到缓存
+6. **本地化资源**：
+   - Tailwind CSS 本地化，无需 CDN
+   - 字体文件本地化（Inter、JetBrains Mono）
+   - Highlight.js CSS 本地化
+   - 减少外部依赖，提升加载速度
 
 ### 用户体验
 1. **拖拽上传**：支持拖拽文件和整个文件夹
@@ -124,6 +134,10 @@
    - 集中管理所有分享（SharesManagementView）
    - 一键复制分享链接
    - 取消分享功能
+6. **移动端优化**：
+   - 禁止页面缩放（viewport 设置）
+   - 触摸友好的交互设计
+   - 响应式布局适配
 
 ## 开发规范
 
@@ -165,6 +179,8 @@
 ### 兼容性
 - 需要浏览器支持 webkitGetAsEntry API（文件夹遍历）
 - 使用 HashRouter 兼容静态部署（GitHub Pages 等）
+- Service Worker 需要 HTTPS 或 localhost 环境
+- 移动端禁止缩放，提供原生应用体验
 
 ### 性能警告
 - 视频截帧可能耗时较长，已标记为 processing 状态

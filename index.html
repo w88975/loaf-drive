@@ -3,43 +3,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="GeekDrive - Minimalist Cloud Storage">
+    <meta name="theme-color" content="#FDE047">
     <title>GeekDrive</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            color: #000000;
-        }
-        .font-mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #000;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #333;
-        }
-        /* Highlight.js overrides */
-        .hljs {
-            background: transparent !important;
-            padding: 0 !important;
-        }
-    </style>
+    
+    <!-- Highlight.js CSS (Local) -->
+    <link rel="stylesheet" href="/css/highlight.css">
     <script>
+        // Suppress ResizeObserver errors
         window.addEventListener('error', (e) => {
             if (e.message === 'ResizeObserver loop completed with undelivered notifications.' || 
                 e.message === 'ResizeObserver loop limit exceeded') {
@@ -47,21 +19,20 @@
                 e.stopPropagation();
             }
         });
+        
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('SW registered:', registration);
+                    })
+                    .catch(error => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
     </script>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.11.0",
-    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@^5.90.12",
-    "highlight.js": "https://esm.sh/highlight.js@^11.9.0"
-  }
-}
-</script>
 </head>
 <body class="overflow-hidden">
     <div id="root"></div>
