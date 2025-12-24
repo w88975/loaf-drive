@@ -14,8 +14,9 @@ import { DriveItem } from '../../types';
 import { CONFIG } from '../../config';
 
 /**
- * 密码缓存键名
- * 用于读取加密文件夹的密码以访问文件内容
+ * Password cache key
+ * Used for accessing encrypted folder files
+ * Cached permanently in localStorage until manually cleared
  */
 const STORAGE_KEY = 'geek_drive_folder_passwords';
 
@@ -61,25 +62,26 @@ export const TextViewer: React.FC<{ item: DriveItem }> = ({ item }) => {
          */
         const contentUrl = `${CONFIG.API_HOST}/api/files/${item.id}/content`;
         
-        /**
-         * 尝试从缓存中获取父文件夹密码
-         * 如果文件在加密文件夹中，需要提供密码才能访问内容
-         */
-        const headers: Record<string, string> = {};
-        if (item.parentId) {
-          try {
-            const stored = sessionStorage.getItem(STORAGE_KEY);
-            if (stored) {
-              const passwords = JSON.parse(stored);
-              const pwd = passwords[item.parentId];
-              if (pwd) {
-                headers['x-folder-password'] = pwd;
+          /**
+          * Retrieve cached password for parent folder
+          * Required for accessing files in encrypted folders
+          * Password is cached permanently in localStorage
+          */
+          const headers: Record<string, string> = {};
+          if (item.parentId) {
+            try {
+              const stored = localStorage.getItem(STORAGE_KEY);
+              if (stored) {
+                const passwords = JSON.parse(stored);
+                const pwd = passwords[item.parentId];
+                if (pwd) {
+                  headers['x-folder-password'] = pwd;
+                }
               }
+            } catch (e) {
+              console.warn('Failed to read password cache', e);
             }
-          } catch (e) {
-            console.warn('Failed to read password cache', e);
           }
-        }
 
         /**
          * 发送请求获取文件内容

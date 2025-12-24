@@ -41,7 +41,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
   const getCachedPassword = useCallback((folderId: string | null): string | undefined => {
     if (!folderId) return undefined;
     try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return undefined;
       const passwords = JSON.parse(stored);
       return passwords[folderId];
@@ -50,20 +50,20 @@ export const FilesView: React.FC<FilesViewProps> = ({
 
   const setCachedPassword = (folderId: string, password: string) => {
     try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEY);
       const passwords = stored ? JSON.parse(stored) : {};
       passwords[folderId] = password;
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(passwords));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(passwords));
     } catch (e) { console.error('Failed to cache password', e); }
   };
 
   const removeCachedPassword = (folderId: string) => {
     try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return;
       const passwords = JSON.parse(stored);
       delete passwords[folderId];
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(passwords));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(passwords));
     } catch {}
   };
 

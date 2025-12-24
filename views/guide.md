@@ -164,7 +164,7 @@ AuthView
 
 3. **加密文件夹支持**
    - 密码输入和验证
-   - 密码缓存（sessionStorage）
+   - 密码缓存（localStorage，永久保存）
    - 403 错误自动清除缓存并重新请求
 
 4. **右键菜单**
@@ -199,8 +199,8 @@ AuthView
 
 **密码管理**：
 - `folderPassword`: 当前文件夹的密码状态
-- `getCachedPassword()`: 从 sessionStorage 读取
-- `setCachedPassword()`: 保存到 sessionStorage
+- `getCachedPassword()`: 从 localStorage 读取
+- `setCachedPassword()`: 保存到 localStorage（永久保存）
 - `removeCachedPassword()`: 清除缓存（解锁或密码错误时）
 
 #### 关键逻辑
@@ -707,7 +707,8 @@ TrashView
 - 避免状态下钻过深（超过 3 层考虑 Context）
 
 ### 密码管理
-- 使用 sessionStorage 而非 localStorage
+- 使用 localStorage 永久缓存文件夹密码
+- 密码不会自动过期，除非手动清除或解锁文件夹
 - 403 错误必须清除缓存
 - 密码通过 useFiles 的参数传递，不直接存储在状态中
 
@@ -742,8 +743,9 @@ TrashView
 ## 注意事项
 
 ### 密码安全
-- 密码不能持久化到 localStorage
-- sessionStorage 在关闭浏览器后自动清除
+- 文件夹密码缓存在 localStorage（永久保存）
+- 密码不会自动过期，方便用户重复访问
+- 用户可通过解锁文件夹来手动清除密码缓存
 - 密码验证失败必须清除缓存
 
 ### API 限制

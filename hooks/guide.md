@@ -414,7 +414,7 @@ const { handleUpload, uploadTasks, cancelUpload } = useUpload();
 
 ### 错误处理
 - 使用 query 的 error 状态展示错误信息
-- 403 错误特殊处理（清除密码缓存）
+- 403 错误特殊处理（清除 localStorage 中的密码缓存）
 - 网络错误提供重试按钮
 
 ### 性能优化
@@ -446,7 +446,8 @@ const { handleUpload, uploadTasks, cancelUpload } = useUpload();
 
 ### 密码缓存
 - 密码通过 password 参数传入 useFiles
-- 缓存管理在 FilesView 组件中
+- 缓存管理在 FilesView 组件中，使用 localStorage 永久保存
+- 密码不会自动过期，除非手动清除或解锁文件夹
 - queryKey 包含 password，确保不同密码独立缓存
 
 ### 上传安全

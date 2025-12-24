@@ -312,17 +312,38 @@ const TextViewer: React.FC<TextViewerProps> = ({ item, forceText }) => {
   
   useEffect(() => {
     // 获取文件内容
-    fetch(item.url)
-      .then(res => res.text())
-      .then(text => {
+    // 如果文件在加密文件夹中，需要从 localStorage 读取缓存的密码
+    const fetchContent = async () => {
+      const headers: Record<string, string> = {};
+      
+      // 读取加密文件夹密码（从 localStorage 永久缓存）
+      if (item.parentId) {
+        try {
+          const stored = localStorage.getItem('geek_drive_folder_passwords');
+          if (stored) {
+            const passwords = JSON.parse(stored);
+            if (passwords[item.parentId]) {
+              headers['x-folder-password'] = passwords[item.parentId];
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to read password cache', e);
+        }
+      }
+      
+      try {
+        const response = await fetch(item.url, { headers });
+        const text = await response.text();
         setContent(text);
         setLoading(false);
-      })
-      .catch(() => {
+      } catch {
         setError(true);
         setLoading(false);
-      });
-  }, [item.url]);
+      }
+    };
+    
+    fetchContent();
+  }, [item.url, item.parentId]);
   
   // 语法高亮
   useEffect(() => {
