@@ -185,7 +185,7 @@ export const ShareView: React.FC = () => {
               onClick={() => setViewMode('grid')} 
               className={`p-2 ${viewMode === 'grid' ? 'bg-yellow-400' : 'hover:bg-gray-100'}`}
             >
-              <Icons.Grid className="w-4 h-4" />
+              <Icons.Grid3x3 className="w-4 h-4" />
             </button>
             <button 
               onClick={() => setViewMode('list')} 

@@ -45,7 +45,7 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 | **App.tsx** | 核心路由与容器 | 负责全局布局；管理导航路径状态 (`path`)；实现全局拖拽上传监听容器；集成 `useUpload` 状态。 |
 | **types.ts** | 类型系统 | 定义 `DriveItem`（文件/文件夹统一模型）、`UploadTask`、`SortKey` 等核心接口。 |
 | **utils.ts** | 客户端处理中心 | 实现 `getVideoFramesWeb`（客户端离线视频截图）；`getImageThumbnailWeb`（150x150 缩略图生成）；文件分类算法。 |
-| **constants.tsx** | 视觉资源库 | 包含所有 SVG 图标组件；定义全局颜色常量 `COLORS`。 |
+| **constants.tsx** | 视觉资源库 | 集成 lucide-react 图标库（30+ 图标）；定义全局颜色常量 `COLORS`；提供统一的图标导出接口。 |
 | **config.ts** | 环境配置 | 管理 `API_HOST` 和 `STATIC_HOST`（R2 资源 CDN 地址）。 |
 
 ### 🛰️ 数据与逻辑类
@@ -98,6 +98,31 @@ GeekDrive 是一款专为极客设计的轻量级、高性能个人网盘系统�
 
 ### 多媒体预处理
 为了减轻服务器压力，所有预览所需的缩略图 (150x150) 和视频帧均在 `useUpload.ts` 中通过 `utils.ts` 离线生成。生成后的 Base64 数据被转换为 Blob 并首先上传到预览存储区。
+
+---
+
+## 📦 5. 技术栈与依赖
+
+### 核心依赖
+
+| 依赖包 | 版本 | 用途 |
+| :--- | :--- | :--- |
+| **react** | ^19.0.0 | UI 框架 |
+| **react-dom** | ^19.0.0 | DOM 渲染 |
+| **react-router-dom** | ^6.22.0 | 客户端路由 |
+| **@tanstack/react-query** | ^5.66.0 | 服务端状态管理与缓存 |
+| **lucide-react** | ^0.562.0 | 现代图标库（1000+ 图标） |
+| **highlight.js** | ^11.9.0 | 代码语法高亮 |
+| **tailwindcss** | ^3.4.1 | 原子化 CSS 框架 |
+| **typescript** | ^5.3.3 | 类型系统 |
+| **vite** | ^5.1.4 | 构建工具 |
+
+### 图标系统
+
+- **lucide-react**: 提供一致的现代图标设计
+- **按需引入**: 支持 Tree-shaking，只打包使用的图标
+- **高度可定制**: 支持 size、color、strokeWidth 等属性
+- **30+ 常用图标**: 涵盖文件类型、操作、导航、状态等场景
 
 ---
 *GeekDrive - Minimalist. Powerful. Secure.*

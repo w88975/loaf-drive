@@ -69,12 +69,15 @@
   - `dataURItoBlob()`: Base64 转 Blob 用于上传
 
 ### constants.tsx - 常量定义
-- **功能**：全局配色方案和 SVG 图标库
+- **功能**：全局配色方案和图标库
 - **设计语言**：极客新丑风 (Geek-Brutalism)
   - 主色：纯黑 #000000
   - 点睛色：明黄 #FDE047
   - 背景：纯白 #FFFFFF
-- **图标**：13 个 SVG 图标组件，支持 className 自定义
+- **图标**：使用 lucide-react 图标库，提供统一的现代图标系统
+  - 所有图标支持 className 自定义
+  - 包含文件、文件夹、操作、状态等常用图标
+  - 响应式设计，支持 SVG 属性控制
 
 ### config.ts - 环境配置
 - **功能**：管理部署相关的环境变量
@@ -177,7 +180,7 @@
 
 ### 修改设计语言
 1. 颜色：修改 `constants.tsx` 中的 `COLORS` 对象
-2. 图标：在 `constants.tsx` 中的 `Icons` 对象添加新图标
+2. 图标：从 lucide-react 导入需要的图标，添加到 `constants.tsx` 的 `Icons` 对象中
 3. 样式：使用 Tailwind CSS 类名，修改全局样式需调整 Tailwind 配置
 
 ### 性能优化建议

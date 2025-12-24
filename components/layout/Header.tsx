@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
          * - border-l: 左侧分隔线
          */}
         <div className="flex border-2 border-black">
-          <button onClick={() => onViewModeChange('grid')} className={`p-1 md:p-1.5 ${viewMode === 'grid' ? 'bg-yellow-400' : 'hover:bg-gray-100'}`}><Icons.Grid className="w-4 h-4" /></button>
+          <button onClick={() => onViewModeChange('grid')} className={`p-1 md:p-1.5 ${viewMode === 'grid' ? 'bg-yellow-400' : 'hover:bg-gray-100'}`}><Icons.Grid3x3 className="w-4 h-4" /></button>
           <button onClick={() => onViewModeChange('list')} className={`p-1 md:p-1.5 border-l-2 border-black ${viewMode === 'list' ? 'bg-yellow-400' : 'hover:bg-gray-100'}`}><Icons.List className="w-4 h-4" /></button>
         </div>
       </div>

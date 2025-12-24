@@ -1,8 +1,8 @@
 /**
  * SharesManagementView.tsx
- * 
+ *
  * 【分享管理视图】
- * 
+ *
  * 功能：管理所有创建的分享链接
  * 核心特性：
  * 1. 查看所有分享 - 显示分享列表和详细信息
@@ -11,20 +11,22 @@
  * 4. 分页加载 - 支持大量分享的分页展示
  */
 
-import React, { useState } from 'react';
-import { Icons } from '../constants';
-import { useAllShares, useShareMutations } from '../hooks/useDriveQueries';
-import { DeleteModal } from '../components/overlays/Modals';
-import { CONFIG } from '../config';
+import React, { useState } from "react";
+import { Icons } from "../constants";
+import { useAllShares, useShareMutations } from "../hooks/useDriveQueries";
+import { DeleteModal } from "../components/overlays/Modals";
+import { CONFIG } from "../config";
 
 interface SharesManagementViewProps {
   searchQuery: string;
 }
 
-export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ searchQuery }) => {
+export const SharesManagementView: React.FC<SharesManagementViewProps> = ({
+  searchQuery,
+}) => {
   const [page, setPage] = useState(1);
   const [selectedShare, setSelectedShare] = useState<any | null>(null);
-  const [activeModal, setActiveModal] = useState<'delete' | null>(null);
+  const [activeModal, setActiveModal] = useState<"delete" | null>(null);
 
   const { data, isLoading } = useAllShares(page, 50);
   const { deleteShare } = useShareMutations();
@@ -36,7 +38,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
   const handleCopyLink = (code: string) => {
     const url = `${window.location.origin}/#/share/${code}`;
     navigator.clipboard.writeText(url).then(() => {
-      alert('Share link copied to clipboard!');
+      alert("Share link copied to clipboard!");
     });
   };
 
@@ -47,15 +49,19 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
       onSuccess: () => {
         setSelectedShare(null);
         setActiveModal(null);
-      }
+      },
     });
   };
 
   // 格式化日期
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Never';
+    if (!dateStr) return "Never";
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
@@ -67,7 +73,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
             Share Management
           </h1>
           <div className="text-xs font-bold uppercase tracking-wider text-gray-500">
-            {shares.length} Share{shares.length !== 1 ? 's' : ''}
+            {shares.length} Share{shares.length !== 1 ? "s" : ""}
           </div>
         </div>
       </div>
@@ -82,7 +88,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
           <div className="h-64 flex flex-col items-center justify-center">
             <Icons.Archive className="w-16 h-16 opacity-10 mb-4" />
             <p className="text-xs font-black uppercase tracking-widest text-gray-400">
-              {searchQuery ? 'No shares found' : 'No shares created yet'}
+              {searchQuery ? "No shares found" : "No shares created yet"}
             </p>
           </div>
         ) : (
@@ -98,7 +104,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
                     <div className="flex items-center gap-2 mb-2">
                       <Icons.Folder className="w-5 h-5 flex-shrink-0" />
                       <h3 className="font-bold text-sm truncate">
-                        {share.file?.filename || 'Unknown File'}
+                        {share.file?.filename || "Unknown File"}
                       </h3>
                       {share.hasPassword && (
                         <span className="px-2 py-0.5 bg-yellow-400 border border-black text-[10px] font-bold uppercase">
@@ -106,12 +112,15 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
                         </span>
                       )}
                     </div>
-                    
+
                     {/* 分享码和统计 */}
                     <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2">
                       <span>Code: {share.code}</span>
                       <span>•</span>
-                      <span>Views: {share.views}{share.maxViews ? `/${share.maxViews}` : ''}</span>
+                      <span>
+                        Views: {share.views}
+                        {share.maxViews ? `/${share.maxViews}` : ""}
+                      </span>
                       {share.expiresAt && (
                         <>
                           <span>•</span>
@@ -133,12 +142,12 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
                       className="p-2 border-2 border-black bg-white hover:bg-yellow-400 transition-colors"
                       title="Copy Link"
                     >
-                      <Icons.Download className="w-4 h-4 rotate-180" />
+                      <Icons.Share className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => {
                         setSelectedShare(share);
-                        setActiveModal('delete');
+                        setActiveModal("delete");
                       }}
                       className="p-2 border-2 border-black bg-white hover:bg-red-500 hover:text-white transition-colors"
                       title="Delete Share"
@@ -156,7 +165,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
         {pagination && pagination.totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 pb-6">
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="px-4 py-2 border-2 border-black font-bold uppercase text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-yellow-400 transition-colors"
             >
@@ -166,7 +175,9 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
               {page} / {pagination.totalPages}
             </span>
             <button
-              onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+              onClick={() =>
+                setPage((p) => Math.min(pagination.totalPages, p + 1))
+              }
               disabled={page === pagination.totalPages}
               className="px-4 py-2 border-2 border-black font-bold uppercase text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-yellow-400 transition-colors"
             >
@@ -177,7 +188,7 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
       </div>
 
       {/* 删除确认模态框 */}
-      {activeModal === 'delete' && selectedShare && (
+      {activeModal === "delete" && selectedShare && (
         <DeleteModal
           title="Cancel Share?"
           count={1}
@@ -192,4 +203,3 @@ export const SharesManagementView: React.FC<SharesManagementViewProps> = ({ sear
     </div>
   );
 };
-
