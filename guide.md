@@ -12,10 +12,12 @@
 │   └── preview/         # 多媒体预览组件
 ├── hooks/               # 逻辑抽象层
 ├── views/               # 视图页面层
+│   ├── AuthView         # API Key 认证视图
 │   ├── FilesView        # 文件管理主视图
 │   ├── ShareView        # 公开分享页（外部访问）
 │   ├── SharesManagementView  # 分享管理视图
 │   └── TrashView        # 回收站视图
+├── auth.ts              # API Key 认证管理
 ├── index.tsx            # 应用入口
 ├── App.tsx              # 根组件与路由
 ├── types.ts             # 全局类型定义
@@ -34,17 +36,20 @@
   - React 18 并发模式启动
 
 ### App.tsx - 根组件
-- **功能**：全局状态管理和路由配置
+- **功能**：全局状态管理、路由配置和认证守卫
 - **关键逻辑**：
   - 管理当前文件夹 ID 和面包屑路径
   - 实现全局拖拽上传监听
   - 协调上传队列和预览模态框
+  - **认证路由守卫**：未认证用户强制跳转到登录页
+  - 分享页独立访问（无需认证）
 - **状态管理**：
   - currentFolderId: 当前所在文件夹
   - path: 导航路径历史
   - searchQuery: 搜索关键词
   - viewMode: 视图模式（grid/list）
   - previewItem: 当前预览的文件
+  - isAuthenticated: 认证状态（通过 authManager 检查）
 
 ### types.ts - 类型定义
 - **功能**：定义所有核心数据结构
@@ -76,6 +81,18 @@
 - **配置项**：
   - API_HOST: Cloudflare Workers 后端地址
   - STATIC_HOST: R2 CDN 静态资源地址
+
+### auth.ts - 认证管理
+- **功能**：管理 API Key 的存储和认证状态
+- **核心方法**：
+  - `saveApiKey(key)`: 保存 API Key 到 localStorage
+  - `getApiKey()`: 获取保存的 API Key
+  - `clearApiKey()`: 清除 API Key（退出登录）
+  - `isAuthenticated()`: 检查是否已认证
+- **存储方式**：localStorage（持久化存储）
+- **安全机制**：
+  - API Key 随每个需要鉴权的请求自动发送
+  - 401 错误自动清除 API Key 并跳转登录页
 
 ## 设计理念
 
@@ -113,19 +130,28 @@
 - **状态管理**：优先使用 TanStack Query，UI 状态用 useState
 
 ### 关键约定
-1. **文件夹 ID**：null 表示根目录，'root' 用于 API 传参
-2. **密码缓存**：使用 sessionStorage，关闭浏览器自动清除
-3. **预览图尺寸**：150x150 像素（图片）、350x350 像素（视频帧）
-4. **分片大小**：10MB/片，100MB 以上文件启用分片上传
+1. **API 认证**：API Key 保存在 localStorage，自动随请求发送
+2. **文件夹 ID**：null 表示根目录，'root' 用于 API 传参
+3. **密码缓存**：使用 sessionStorage，关闭浏览器自动清除
+4. **预览图尺寸**：150x150 像素（图片）、350x350 像素（视频帧）
+5. **分片大小**：10MB/片，100MB 以上文件启用分片上传
 
 ## 注意事项
 
 ### 安全考虑
-- 密码仅缓存在 sessionStorage，不持久化
-- 403 错误自动清除缓存密码并重新请求
-- 分享访问使用 Header 认证（x-share-token），避免 CORS 问题
-- 分享令牌仅存储在内存中，刷新后需重新验证
-- 分享页面只读模式，禁止二次分享
+- **API 鉴权**：
+  - 所有网盘功能需要 API Key 认证
+  - API Key 保存在 localStorage
+  - 每个请求自动在 Header 中携带 `x-api-key`
+  - 401 错误自动清除 API Key 并跳转登录页
+- **文件夹密码**：
+  - 密码仅缓存在 sessionStorage，不持久化
+  - 403 错误自动清除缓存密码并重新请求
+- **分享访问**：
+  - 分享页面公开访问，无需 API Key
+  - 使用 Header 认证（x-share-token），避免 CORS 问题
+  - 分享令牌仅存储在内存中，刷新后需重新验证
+  - 分享页面只读模式，禁止二次分享
 
 ### 兼容性
 - 需要浏览器支持 webkitGetAsEntry API（文件夹遍历）

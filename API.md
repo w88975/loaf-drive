@@ -4,6 +4,10 @@
 
 ## 功能特性
 
+- **API 鉴权**: 
+  - 所有网盘基础功能（文件管理、上传、删除等）需要 API Key 鉴权
+  - 分享访问接口公开，无需鉴权
+  - Header 方式传递鉴权信息（`x-api-key`）
 - **文件上传**: 
   - 小文件直接上传（< 100MB）
   - 大文件分片上传（支持断点续传，避免 413 错误）
@@ -26,7 +30,7 @@
   - 支持过期时间
   - 支持访问次数限制
   - 文件/文件夹分享
-  - 独立的分享访问接口
+  - 独立的分享访问接口（公开访问，无需鉴权）
 
 ## 技术栈
 
@@ -190,6 +194,82 @@ curl -X PATCH "http://localhost:8787/api/files/{folder-id}" \
 
 所有示例均假设服务运行在本地 `http://localhost:8787`。
 
+### API 鉴权
+
+**重要**: 除了分享功能的公开访问接口外，所有 API 接口都需要鉴权。
+
+#### 鉴权方式
+
+所有需要鉴权的请求必须在 Header 中携带 `x-api-key`：
+
+```bash
+curl -H "x-api-key: your_api_key_here" "http://localhost:8787/api/files"
+```
+
+#### 配置 API Key
+
+在 `wrangler.toml` 文件中配置：
+
+```toml
+[vars]
+API_KEY = "your_api_key_change_in_production"
+```
+
+**生产环境**: 请务必修改默认的 API Key！
+
+#### 需要鉴权的接口
+
+以下接口需要在 Header 中携带 `x-api-key`：
+
+**文件管理:**
+- `GET /api/files` - 获取文件列表
+- `POST /api/files/folder` - 创建文件夹
+- `POST /api/files/upload` - 上传文件
+- `POST /api/files/upload-preview` - 上传文件（含预览图）
+- `POST /api/files/upload/init` - 初始化分片上传
+- `POST /api/files/upload/part` - 上传分片
+- `POST /api/files/upload/complete` - 完成分片上传
+- `POST /api/files/upload/abort` - 取消分片上传
+- `GET /api/files/:id` - 获取文件详情
+- `GET /api/files/:id/content` - 下载文件
+- `PATCH /api/files/:id` - 更新文件信息
+- `DELETE /api/files/:id` - 删除文件/文件夹
+
+**文件夹:**
+- `GET /api/folders/tree` - 获取文件夹树
+
+**回收站:**
+- `GET /api/recycle-bin` - 获取回收站列表
+- `DELETE /api/recycle-bin` - 清空回收站
+
+**分享管理:**
+- `POST /api/shares` - 创建分享
+- `GET /api/shares` - 获取分享列表
+- `PATCH /api/shares/:code` - 更新分享
+- `DELETE /api/shares/:code` - 删除分享
+- `GET /api/files/:id/shares` - 获取文件的所有分享
+
+#### 无需鉴权的接口（公开访问）
+
+以下分享访问接口无需鉴权：
+
+- `GET /api/shares/:code` - 获取分享信息
+- `POST /api/shares/:code/verify` - 验证分享密码
+- `GET /api/shares/:code/files` - 获取分享内容
+- `GET /api/shares/:code/download/:fileId` - 下载分享文件
+
+#### 鉴权失败响应
+
+如果 API Key 无效或缺失，将返回 401 错误：
+
+```json
+{
+  "code": 401,
+  "message": "Unauthorized: Invalid or missing API key",
+  "data": null
+}
+```
+
 **通用响应格式:**
 
 ```json
@@ -216,14 +296,17 @@ Headers:
 **示例:**
 ```bash
 # 获取根目录文件列表
-curl "http://localhost:8787/api/files?folderId=root&page=1&limit=20"
+curl -H "x-api-key: your_api_key" \
+  "http://localhost:8787/api/files?folderId=root&page=1&limit=20"
 
 # 搜索文件
-curl "http://localhost:8787/api/files?search=report"
+curl -H "x-api-key: your_api_key" \
+  "http://localhost:8787/api/files?search=report"
 
-# 访问加锁的文件夹（需要密码）
-curl "http://localhost:8787/api/files?folderId=folder-id-xxx" \
-  -H "x-folder-password: 456111"
+# 访问加锁的文件夹（需要API Key和文件夹密码）
+curl -H "x-api-key: your_api_key" \
+  -H "x-folder-password: 456111" \
+  "http://localhost:8787/api/files?folderId=folder-id-xxx"
 ```
 
 **响应示例:**
@@ -253,6 +336,7 @@ Body (JSON):
 **示例:**
 ```bash
 curl -X POST "http://localhost:8787/api/files/folder" \
+  -H "x-api-key: your_api_key" \
   -H "Content-Type: application/json" \
   -d '{"name": "My Documents", "folderId": "root"}'
 ```

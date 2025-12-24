@@ -14,6 +14,7 @@ api/
 - **类型安全**：所有接口都有明确的输入输出类型
 - **错误处理**：统一的错误处理和重试机制
 - **无状态**：不保存任何状态，仅作为通信桥梁
+- **自动鉴权**：自动为需要鉴权的请求添加 API Key
 
 ### 架构模式
 - 使用对象导出 `driveApi` 集中管理所有接口
@@ -27,19 +28,46 @@ api/
 async function apiFetch<T>(
   url: string, 
   options: RequestInit = {}, 
-  retries = 2
+  retries = 2,
+  requireAuth = true
 ): Promise<ApiResponse<T>>
 ```
 
 **功能特性**：
-1. **自动重试**：5xx 错误和网络异常最多重试 2 次
-2. **重试策略**：失败后等待 1 秒再重试
-3. **错误处理**：优先返回 API 的 JSON 错误，JSON 解析失败则构造标准错误
-4. **泛型支持**：支持类型推断和类型安全
+1. **自动鉴权**：`requireAuth = true` 时自动添加 `x-api-key` header
+2. **自动重试**：5xx 错误和网络异常最多重试 2 次
+3. **重试策略**：失败后等待 1 秒再重试
+4. **错误处理**：优先返回 API 的 JSON 错误，JSON 解析失败则构造标准错误
+5. **401 处理**：自动清除无效 API Key 并跳转登录页
+6. **泛型支持**：支持类型推断和类型安全
+
+**参数说明**：
+- `url`: 请求地址
+- `options`: Fetch 配置项
+- `retries`: 重试次数（默认 2）
+- `requireAuth`: 是否需要鉴权（默认 true）
 
 **使用场景**：
 - 所有 API 请求的底层实现
 - 不应直接暴露给外部使用
+
+**鉴权机制**：
+```typescript
+if (requireAuth) {
+  const apiKey = authManager.getApiKey();
+  if (apiKey) {
+    headers['x-api-key'] = apiKey;
+  }
+}
+```
+
+**401 错误处理**：
+```typescript
+if (result.code === 401) {
+  authManager.clearApiKey();
+  window.location.href = '/#/auth';
+}
+```
 
 ### driveApi 对象 - API 接口集合
 
@@ -329,10 +357,12 @@ try {
 ## 注意事项
 
 ### API 约定
-- 文件夹 ID 为 null 时传递 'root' 字符串
-- 加密文件夹密码使用请求头 `x-folder-password`
-- 分享访问令牌使用请求头 `x-share-token`
-- 所有响应都包含 `code`、`message`、`data` 三个字段
+- **鉴权 Header**：需要鉴权的请求使用 `x-api-key`
+- **文件夹 ID**：null 时传递 'root' 字符串
+- **加密文件夹密码**：使用请求头 `x-folder-password`
+- **分享访问令牌**：使用请求头 `x-share-token`
+- **响应格式**：所有响应都包含 `code`、`message`、`data` 三个字段
+- **无需鉴权的接口**：分享访问接口（`/api/shares/:code/*`）设置 `requireAuth = false`
 
 ### 性能考虑
 - 批量操作使用并发请求（`Promise.all`）
@@ -340,9 +370,16 @@ try {
 - 大文件上传使用分片模式
 
 ### 安全提醒
-- 密码仅通过 HTTPS 传输
-- 不在客户端持久化密码（除 sessionStorage）
-- 403 错误应清除本地密码缓存
-- 分享令牌仅存储在内存中（组件状态），不持久化
-- 分享访问使用 Header 认证而非 Cookie，避免 CORS 问题
+- **API Key**：
+  - 保存在 localStorage 持久化存储
+  - 自动随需要鉴权的请求发送
+  - 401 错误自动清除并跳转登录页
+  - 分享访问接口不需要 API Key
+- **文件夹密码**：
+  - 仅通过 HTTPS 传输
+  - 不在客户端持久化（除 sessionStorage）
+  - 403 错误应清除本地密码缓存
+- **分享令牌**：
+  - 仅存储在内存中（组件状态），不持久化
+  - 使用 Header 认证而非 Cookie，避免 CORS 问题
 

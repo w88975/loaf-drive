@@ -6,28 +6,49 @@
 
 import { ApiResponse, ApiFileItem, FolderTreeItem, ShareInfo, ShareContentResponse } from '../types';
 import { CONFIG } from '../config';
+import { authManager } from '../auth';
 
 const { API_HOST } = CONFIG;
 
-async function apiFetch<T>(url: string, options: RequestInit = {}, retries = 2): Promise<ApiResponse<T>> {
+async function apiFetch<T>(url: string, options: RequestInit = {}, retries = 2, requireAuth = true): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(url, options);
+    const headers: Record<string, string> = {
+      ...(options.headers as Record<string, string> || {})
+    };
+    
+    if (requireAuth) {
+      const apiKey = authManager.getApiKey();
+      if (apiKey) {
+        headers['x-api-key'] = apiKey;
+      }
+    }
+    
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
     
     if (!response.ok && retries > 0 && response.status >= 500) {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      return apiFetch(url, options, retries - 1);
+      return apiFetch(url, options, retries - 1, requireAuth);
     }
 
     const result = await response.json().catch(() => ({
-      code: -1,
-      message: `HTTP Error ${response.status}: ${response.statusText}`
+      code: response.status === 401 ? 401 : -1,
+      message: response.status === 401 ? 'Unauthorized: Invalid or missing API key' : `HTTP Error ${response.status}: ${response.statusText}`
     }));
+
+    // 如果返回 401，清除 API Key 并触发重新登录
+    if (result.code === 401) {
+      authManager.clearApiKey();
+      window.location.href = '/#/auth';
+    }
 
     return result as ApiResponse<T>;
   } catch (error) {
     if (retries > 0) {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      return apiFetch(url, options, retries - 1);
+      return apiFetch(url, options, retries - 1, requireAuth);
     }
     throw new Error(error instanceof Error ? error.message : 'Network error or CORS failure');
   }
@@ -152,7 +173,7 @@ export const driveApi = {
   },
 
   getShareInfo: async (code: string) => {
-    return apiFetch<ShareInfo>(`${API_HOST}/api/shares/${code}`);
+    return apiFetch<ShareInfo>(`${API_HOST}/api/shares/${code}`, {}, 2, false);
   },
 
   verifySharePassword: async (code: string, password: string) => {
@@ -160,7 +181,7 @@ export const driveApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
-    });
+    }, 2, false);
   },
 
   getShareFiles: async (code: string, subFolderId?: string, token?: string) => {
@@ -172,7 +193,7 @@ export const driveApi = {
       headers['x-share-token'] = token;
     }
     
-    return apiFetch<ShareContentResponse>(url, { headers });
+    return apiFetch<ShareContentResponse>(url, { headers }, 2, false);
   },
 
   getAllShares: async (page?: number, limit?: number, fileId?: string) => {

@@ -201,7 +201,8 @@ Header (固定顶部, h-14)
 
 #### 功能概述
 侧边栏提供主要的路由导航和系统信息，包括：
-- 主要路由链接（文件、回收站）
+- 主要路由链接（文件、分享管理、回收站）
+- 退出登录按钮
 - Cloudflare 节点状态显示
 - 版本信息
 - Logo 和品牌
@@ -220,15 +221,18 @@ interface SidebarProps {
 Sidebar (固定左侧, w-64)
 ├── Logo 区域
 │   ├── 应用图标
-│   └── 应用名称
+│   └── 应用名称 "GEEK.DRIVE"
+│   └── 状态 "Status: Online"
 ├── 导航链接区域
-│   ├── 文件（主页）
-│   ├── 回收站
-│   └── （未来可扩展）
-├── 底部信息区域
-│   ├── Cloudflare 节点状态
-│   └── 版本号
-└── 关闭按钮（移动端）
+│   ├── All Files（主页）
+│   ├── Shares（分享管理）
+│   └── Trash（回收站）
+├── 底部区域（absolute bottom-0）
+│   ├── 退出登录按钮
+│   └── 信息区域
+│       ├── Cloudflare 节点状态
+│       └── 版本号
+└── 背景遮罩（移动端）
 ```
 
 #### 导航链接
@@ -244,15 +248,43 @@ Sidebar (固定左侧, w-64)
 </Link>
 ```
 
+**分享管理**：
+```typescript
+<Link 
+  to="/shares" 
+  className={location.pathname === '/shares' ? 'active' : ''}
+>
+  <Icons.Search className="rotate-45" />
+  <span>Shares</span>
+</Link>
+```
+
 **回收站**：
 ```typescript
 <Link 
-  to="/trash"
+  to="/trash" 
   className={location.pathname === '/trash' ? 'active' : ''}
 >
   <Icons.Trash />
   <span>Trash</span>
 </Link>
+```
+
+**退出登录**：
+```typescript
+<button
+  onClick={handleLogout}
+  className="w-full p-3 border-b-2 border-black hover:bg-red-500 hover:text-white"
+>
+  <Icons.Close />
+  Logout
+</button>
+
+const handleLogout = () => {
+  authManager.clearApiKey();
+  navigate('/auth');
+  onClose();
+};
 ```
 
 **激活状态**：

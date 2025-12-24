@@ -16,6 +16,8 @@ import { FilesView } from './views/FilesView';
 import { TrashView } from './views/TrashView';
 import { ShareView } from './views/ShareView';
 import { SharesManagementView } from './views/SharesManagementView';
+import { AuthView } from './views/AuthView';
+import { authManager } from './auth';
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -54,11 +56,34 @@ const App: React.FC = () => {
   const isSharesManagement = location.pathname === '/shares';
   // 分享页不显示侧边栏和主 Header
   const isSharePage = location.pathname.startsWith('/share/');
+  const isAuthPage = location.pathname === '/auth';
 
+  // 检查是否已认证
+  const isAuthenticated = authManager.isAuthenticated();
+
+  // 分享页独立渲染（无需认证）
   if (isSharePage) {
     return (
       <Routes>
         <Route path="/share/:code" element={<ShareView />} />
+      </Routes>
+    );
+  }
+
+  // 认证页独立渲染
+  if (isAuthPage) {
+    return (
+      <Routes>
+        <Route path="/auth" element={<AuthView />} />
+      </Routes>
+    );
+  }
+
+  // 未认证时跳转到认证页
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="*" element={<AuthView />} />
       </Routes>
     );
   }

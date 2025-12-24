@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Icons } from '../../constants';
 import { CONFIG } from '../../config';
+import { authManager } from '../../auth';
 
 interface SidebarProps {
   isOpen: boolean;        // 侧边栏是否打开（移动端）
@@ -16,10 +17,21 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectRoot }) => {
+  const navigate = useNavigate();
+  
   /**
    * 提取 API 主机名用于底部节点状态显示
    */
   const hostName = new URL(CONFIG.API_HOST).hostname;
+
+  /**
+   * 处理退出登录
+   */
+  const handleLogout = () => {
+    authManager.clearApiKey();
+    navigate('/auth');
+    onClose();
+  };
 
   /**
    * 侧边栏导航项组件
@@ -102,16 +114,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onSelectRoot 
         
         {/* 
          * 底部信息区域
-         * 功能：显示 Cloudflare 节点连接状态
+         * 功能：显示 Cloudflare 节点连接状态和退出按钮
          * - 固定在侧边栏底部（absolute bottom-0）
          * - 显示主机名和协议版本
+         * - 退出登录按钮
          */}
-        <div className="absolute bottom-0 w-full p-6 border-t-2 border-black bg-white">
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-xs uppercase font-bold">Cloud Nodes</span>
-            <span className="text-[10px] text-gray-500">Live API</span>
+        <div className="absolute bottom-0 w-full border-t-2 border-black bg-white">
+          <button
+            onClick={handleLogout}
+            className="w-full p-3 border-b-2 border-black hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center gap-2 font-bold uppercase text-xs"
+          >
+            <Icons.Close className="w-4 h-4" />
+            Logout
+          </button>
+          <div className="p-6">
+            <div className="flex justify-between items-end mb-2">
+              <span className="text-xs uppercase font-bold">Cloud Nodes</span>
+              <span className="text-[10px] text-gray-500">Live API</span>
+            </div>
+            <div className="text-[9px] text-gray-400 uppercase leading-tight">Connected to {hostName}<br/>Secure storage protocol v1</div>
           </div>
-          <div className="text-[9px] text-gray-400 uppercase leading-tight">Connected to {hostName}<br/>Secure storage protocol v1</div>
         </div>
       </aside>
     </>
