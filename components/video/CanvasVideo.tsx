@@ -68,7 +68,7 @@ const CanvasVideo = forwardRef<CanvasVideoRef, CanvasVideoProps>(
     const [isDraggingProgress, setIsDraggingProgress] = useState(false);
     
     const containerRef = useRef<HTMLDivElement>(null);
-    const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+    const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useImperativeHandle(ref, () => ({
       play: () => videoRef.current?.play(),
@@ -140,7 +140,7 @@ const CanvasVideo = forwardRef<CanvasVideoRef, CanvasVideoProps>(
       if (isPlaying) {
         controlsTimeoutRef.current = setTimeout(() => {
           setShowControls(false);
-        }, 3000);
+        }, 3000) as any;
       }
     };
 
