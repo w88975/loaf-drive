@@ -140,11 +140,12 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ item }) => {
 ### VideoViewer.tsx - 视频播放器
 
 #### 功能特性
-- HTML5 原生视频播放
-- 自动播放（可选）
-- 播放控制条
-- 全屏支持
-- 倍速播放
+- 使用 CanvasVideo 组件进行高性能视频播放
+- 支持 HLS 流媒体（.m3u8）
+- Canvas 渲染，优化内存使用
+- 自动播放
+- 积极的缓冲管理和内存清理
+- 支持本地文件和远程URL
 
 #### Props 接口
 ```typescript
@@ -157,36 +158,39 @@ interface VideoViewerProps {
 ```typescript
 const VideoViewer: React.FC<VideoViewerProps> = ({ item }) => {
   return (
-    <div className="video-viewer">
-      <video 
-        src={item.url}
-        controls
-        autoPlay
-        playsInline
-        className="max-w-full max-h-full"
-        style={{
-          backgroundColor: '#000',
-          boxShadow: '8px 8px 0px 0px rgba(0,0,0,1)'
-        }}
-      >
-        Your browser does not support video playback.
-      </video>
-    </div>
+    <CanvasVideo 
+      src={item.url} 
+      autoplay={true}
+      className="h-full w-full"
+    />
   );
 };
 ```
 
 #### 播放器特性
-- **controls**：显示播放控制条
-- **autoPlay**：自动播放（静音）
-- **playsInline**：iOS 内联播放
-- **黑色背景**：视频周围填充黑色
+- **HLS 支持**：自动检测 .m3u8 文件并使用 HLS.js 加载
+- **Canvas 渲染**：使用虚拟 video 元素解码，Canvas 渲染输出
+- **内存优化**：
+  - 最大缓冲 10 秒视频
+  - 后向缓冲保留 5 秒
+  - 缓冲上限 30MB
+- **自动播放**：默认静音自动播放
+- **点击控制**：点击 Canvas 切换播放/暂停
 
 #### 支持格式
+- HLS 流媒体（.m3u8）
 - MP4 (H.264/H.265)
 - WebM (VP8/VP9)
 - OGG (Theora)
-- MOV (部分支持)
+- MOV
+- 本地 File 对象
+
+#### 技术优势
+- ✅ 支持 HLS 分段加载，适合大视频文件
+- ✅ 积极的内存管理，防止内存泄漏
+- ✅ Worker 线程解码，不阻塞主线程
+- ✅ Canvas 渲染提供更好的控制能力
+- ✅ 自动降级到原生 video（不支持 HLS 时）
 
 ---
 

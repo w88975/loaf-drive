@@ -108,7 +108,7 @@ components/
 **核心组件**：
 - **PreviewContent**：预览器分发器，根据 MIME 类型选择渲染器
 - **ImageViewer**：图片查看器
-- **VideoViewer**：HTML5 视频播放器
+- **VideoViewer**：高性能视频播放器，使用 CanvasVideo 组件，支持 HLS 流媒体
 - **AudioViewer**：音频播放器，带旋转唱片动画
 - **PDFViewer**：PDF文档查看器，浏览器原生支持
 - **TextViewer**：代码高亮查看器，集成 highlight.js
@@ -118,6 +118,7 @@ components/
 - 策略模式：PreviewContent 根据文件类型选择查看器
 - 统一接口：所有查看器接收相同的 Props (item: DriveItem)
 - 渐进增强：优先展示预览，失败则提供下载
+- 性能优化：VideoViewer 使用 Canvas 渲染和积极的内存管理
 
 ## 组件通信
 
