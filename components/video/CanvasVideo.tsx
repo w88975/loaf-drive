@@ -6,6 +6,7 @@ import React, {
   forwardRef,
 } from "react";
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
+import Hls from "hls.js";
 
 /**
  * CanvasVideo Component (HLS.js + Virtual Decoder Edition)
@@ -192,24 +193,9 @@ const CanvasVideo = forwardRef<CanvasVideoRef, CanvasVideoProps>(
       animationFrameRef.current = requestAnimationFrame(renderLoop);
     };
 
-    const loadHlsScript = (): Promise<any> => {
-      return new Promise((resolve, reject) => {
-        if ((window as any).Hls) {
-          resolve((window as any).Hls);
-          return;
-        }
-        const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest";
-        script.onload = () => resolve((window as any).Hls);
-        script.onerror = () => reject(new Error("Failed to load HLS engine."));
-        document.head.appendChild(script);
-      });
-    };
-
     const init = async () => {
       try {
         cleanup();
-        const Hls = await loadHlsScript();
 
         const video = document.createElement("video");
         video.muted = autoplay; // Muted only for autoplay
