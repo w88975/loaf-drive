@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanvasVideo 测试页面</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border: 4px solid black;
+      box-shadow: 8px 8px 0px 0px rgba(0,0,0,1);
+      padding: 20px;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border-bottom: 4px solid black;
+      padding-bottom: 10px;
+    }
+    
+    .video-container {
+      width: 100%;
+      height: 600px;
+      border: 4px solid black;
+      background: black;
+      margin-bottom: 20px;
+    }
+    
+    .info {
+      background: #fde047;
+      border: 2px solid black;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .info ul {
+      list-style: none;
+      margin-top: 10px;
+    }
+    
+    .info li {
+      margin: 5px 0;
+      padding-left: 15px;
+      position: relative;
+    }
+    
+    .info li:before {
+      content: '▶';
+      position: absolute;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 CanvasVideo 播放器测试</h1>
+    
+    <div class="info">
+      <strong>⚠️ 测试说明：</strong>
+      <ul>
+        <li>控制栏应该在视频底部显示</li>
+        <li>包含：播放/暂停按钮、进度条、时间显示、音量控制、全屏按钮</li>
+        <li>鼠标移入视频区域时控制栏应该显示</li>
+        <li>播放时 3 秒后自动隐藏，移动鼠标重新显示</li>
+        <li>暂停时控制栏保持显示</li>
+      </ul>
+    </div>
+    
+    <div class="video-container" id="video-root">
+      <!-- React 组件将挂载在这里 -->
+    </div>
+    
+    <div class="info" style="background: white;">
+      <strong>🎨 UI 风格特征：</strong>
+      <ul>
+        <li>白色控制栏背景 + 4px 黑色顶边框</li>
+        <li>黄色进度条（#FDE047）</li>
+        <li>黑色边框按钮，悬停变黄色</li>
+        <li>2px 硬核阴影效果</li>
+        <li>等宽字体时间显示</li>
+      </ul>
+    </div>
+  </div>
+  
+  <script>
+    console.log('✅ 测试页面已加载');
+    console.log('📝 请在开发环境中运行 React 应用来测试 CanvasVideo 组件');
+    console.log('💡 提示：在实际应用中打开视频预览即可看到控制栏');
+  </script>
+</body>
+</html>
+
