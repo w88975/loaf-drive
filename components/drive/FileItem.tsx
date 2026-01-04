@@ -40,6 +40,7 @@ export const FileItem: React.FC<FileItemProps> = ({
   const iconKey = getFileIcon(item.type, item.extension);
   const pressTimer = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   const startPress = () => {
     isLongPressActive.current = false;
@@ -90,6 +91,8 @@ export const FileItem: React.FC<FileItemProps> = ({
     return (
       <div 
         {...eventHandlers}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         className={`group relative aspect-square border-2 border-black flex flex-col items-center justify-between cursor-pointer transition-all overflow-hidden ${isSelected ? 'bg-yellow-200 ring-4 ring-black scale-[0.98]' : 'hover:bg-gray-50 active:scale-95'}`}
       >
         <div className="flex-1 flex items-center justify-center w-full relative">
@@ -104,7 +107,7 @@ export const FileItem: React.FC<FileItemProps> = ({
             </div>
           ) : showPreview ? (
             <div className="absolute inset-0 p-1">
-              {hasPreviews ? <FilePreviewLoop previews={item.previews!} /> : <img src={item.url} alt="" className="w-full h-full object-cover border border-black/5" />}
+              {hasPreviews ? <FilePreviewLoop previews={item.previews!} isPlaying={isHovered} /> : <img src={item.url} alt="" className="w-full h-full object-cover border border-black/5" />}
               {isVideo && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-black/40 backdrop-blur-sm rounded-full p-1 border border-white/30">

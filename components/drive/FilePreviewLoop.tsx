@@ -19,12 +19,14 @@ interface FilePreviewLoopProps {
   previews: string[];
   alt?: string;
   className?: string;
+  isPlaying?: boolean;
 }
 
 export const FilePreviewLoop: React.FC<FilePreviewLoopProps> = ({ 
   previews, 
   alt = '', 
-  className = '' 
+  className = '',
+  isPlaying = false
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loadedImages, setLoadedImages] = useState<string[]>([]);
@@ -68,6 +70,15 @@ export const FilePreviewLoop: React.FC<FilePreviewLoopProps> = ({
   useEffect(() => {
     if (isLoading || loadedImages.length <= 1) return;
 
+    if (!isPlaying) {
+      setCurrentIndex(0);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
     intervalRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % loadedImages.length);
     }, 300);
@@ -78,7 +89,7 @@ export const FilePreviewLoop: React.FC<FilePreviewLoopProps> = ({
         intervalRef.current = null;
       }
     };
-  }, [isLoading, loadedImages.length]);
+  }, [isLoading, loadedImages.length, isPlaying]);
 
   if (previews.length === 0) return null;
 
