@@ -331,6 +331,38 @@ PreviewModal (全屏)
     └── PreviewContent（策略分发器）
 ```
 
+#### 响应式设计
+PreviewModal 采用移动优先的响应式设计，根据屏幕尺寸提供不同的布局模式：
+
+**PC端（≥768px）**：
+- 居中弹框模式
+- 最大宽度 `max-w-5xl` (1024px)
+- 高度 `h-[90vh]`
+- 四周有 `p-4` 边距
+- 带硬阴影 `shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]`
+
+**移动端（<768px）**：
+- 全屏沉浸式模式
+- 宽度和高度占满整个屏幕（`w-full h-screen`）
+- 无外边距（`p-0`）
+- 无阴影（`shadow-none`）
+
+**实现方式**：
+```tsx
+// 外层容器：移动端移除 padding
+<div className="... p-4 max-md:p-0 ...">
+  {/* 弹框主容器：移动端全屏 */}
+  <div className="... max-w-5xl max-md:max-w-none h-[90vh] max-md:h-screen shadow-[...] max-md:shadow-none ...">
+    {/* 内容... */}
+  </div>
+</div>
+```
+
+**断点切换**：
+- Tailwind 断点 `md:` = 768px
+- 使用 `max-md:` 前缀定义移动端样式
+- 浏览器窗口调整大小时自动切换，无需刷新
+
 #### 功能特性
 
 **标题栏信息**：

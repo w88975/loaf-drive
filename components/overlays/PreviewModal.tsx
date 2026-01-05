@@ -39,11 +39,11 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[130] flex items-center justify-center p-4 max-md:p-0 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-white border-4 border-black w-full max-w-5xl h-[90vh] flex flex-col shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in-95 duration-200"
+        className="bg-white border-4 border-black w-full max-w-5xl max-md:max-w-none h-[90vh] max-md:h-screen flex flex-col shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-md:shadow-none animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b-2 border-black flex items-center justify-between bg-yellow-400">
